@@ -39,7 +39,7 @@ export default function LoginPage() {
   return (
     <main className="wrap" style={{ maxWidth: 520 }}>
       <div className="topbar">
-        <Link className="logo" href="/">{PRODUCT_NAME.split(" ")[0]} <span>Shield</span></Link>
+        <Link className="logo" href="/"><svg className="yt-mark" width="32" height="23" viewBox="0 0 30 21" aria-hidden="true"><rect width="30" height="21" rx="5" fill="#FF0033"/><path d="M12.2 6.4l7 4.1-7 4.1z" fill="#fff"/></svg>{PRODUCT_NAME.replace(/ Shield$/, "")} <span>Shield</span></Link>
         <Link className="btn btn-ghost btn-sm" href="/">Home</Link>
       </div>
       <h1 style={{ fontSize: "1.9rem" }}>{mode === "signin" ? "Sign in" : "Create your account"}</h1>
