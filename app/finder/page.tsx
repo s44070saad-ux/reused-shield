@@ -115,6 +115,7 @@ export default function FinderPage() {
                 <option value="all">Shorts + videos</option>
                 <option value="shorts">Shorts only (≤60s)</option>
                 <option value="long">Videos only (&gt;60s)</option>
+                <option value="long8">Videos only (&gt;8 min)</option>
               </select>
             </div>
             <div className="field">
