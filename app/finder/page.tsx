@@ -80,12 +80,14 @@ export default function FinderPage() {
         <span className="chip">Viral Content Finder</span>
       </div>
 
-      <h1 style={{ fontSize: "2rem" }}>Viral Content Finder</h1>
-      <p className="muted" style={{ maxWidth: 680, marginTop: 0 }}>
-        Find channels with breakout videos in a niche — then audit the risk before you copy the format.
-        Discovery starts from a keyword; your filters do the cutting. Free beta: 5 fresh searches a day
-        (identical repeats within 24 hours are free — results are cached).
-      </p>
+      <section className="page-head">
+        <h1>Viral Content Finder</h1>
+        <p>
+          Find channels with breakout videos in a niche — then audit the risk before you copy the format.
+          Search by keyword, or seed from a reference channel. Free beta: 5 fresh searches a day
+          (identical repeats within 24 hours are free — results are cached).
+        </p>
+      </section>
 
       <div className="card">
         <form onSubmit={search}>
