@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, type Audit, type Deadline, deadlineDates, daysLeft } from "@/lib/supabaseClient";
 import { SELF_CHECK_QUESTIONS } from "@/lib/selfCheck";
+import { groupByChannel } from "@/lib/auditDiff";
 import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS } from "@/lib/config";
 import type { Session } from "@supabase/supabase-js";
 
@@ -135,6 +136,40 @@ export default function Dashboard() {
         <div className="honesty">{HONESTY_NOTE}</div>
       </div>
 
+      {(() => {
+        const groups = [...groupByChannel(audits).values()].filter((arr) => arr.length >= 2)
+          .sort((a, b) => new Date(b[b.length - 1].created_at).getTime() - new Date(a[a.length - 1].created_at).getTime());
+        if (!groups.length) return null;
+        return (
+          <>
+            <h2>Channel trends</h2>
+            <div className="grid">
+              {groups.map((arr) => {
+                const first = arr[0];
+                const last = arr[arr.length - 1];
+                const delta = last.score - first.score;
+                return (
+                  <div className="card" key={last.channel_id ?? last.id} style={{ marginTop: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                      <div>
+                        <b style={{ fontSize: "1.05rem" }}>{last.channel_title ?? last.channel_input}</b><br />
+                        <span className="muted" style={{ fontSize: ".9rem" }}>
+                          {arr.map((a) => a.score).join(" → ")} · {arr.length} audits ·{" "}
+                          <b style={{ color: delta < 0 ? "#0b7a6e" : delta > 0 ? "#dc2626" : "#647d95" }}>
+                            {delta === 0 ? "no change" : delta < 0 ? `▼ ${Math.abs(delta)} risk down` : `▲ ${delta} risk up`}
+                          </b>
+                        </span>
+                      </div>
+                      <Link className="btn btn-ghost btn-sm" href={`/audit/${last.id}`}>Latest report</Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
+
       <h2>Past audits</h2>
       {audits.length === 0 ? (
         <p className="muted">No audits yet. Your first one takes under a minute.</p>
@@ -153,6 +188,7 @@ export default function Dashboard() {
                   <span className={`score-ring sm level-${a.level}`} style={{ "--p": a.score } as React.CSSProperties}>
                     <b>{a.score}</b>
                   </span>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setChannel(a.channel_input || a.channel_url || ""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Re-audit</button>
                   <Link className="btn btn-sm" href={`/audit/${a.id}`}>Open report</Link>
                 </div>
               </div>
