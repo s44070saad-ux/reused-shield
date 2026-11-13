@@ -99,7 +99,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <h1 style={{ fontSize: "2rem" }}>Your channels</h1>
+      <section className="page-head">
+        <h1>Your channels</h1>
+        <p>Every audit you've run, your rejection clocks, and your provenance evidence — in one place.</p>
+      </section>
 
       <div className="card">
         <h3>Run a new audit</h3>
@@ -143,8 +146,8 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span className={`score-ring level-${a.level}`} style={{ width: 64, height: 64, borderWidth: 5 }}>
-                    <b style={{ fontSize: "1.15rem" }}>{a.score}</b>
+                  <span className={`score-ring sm level-${a.level}`} style={{ "--p": a.score } as React.CSSProperties}>
+                    <b>{a.score}</b>
                   </span>
                   <Link className="btn btn-sm" href={`/audit/${a.id}`}>Open report</Link>
                 </div>
