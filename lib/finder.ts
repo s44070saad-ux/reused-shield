@@ -7,7 +7,7 @@ export interface FinderFilters {
   referenceChannel?: string; // channel URL/@handle/ID the search was seeded from (id form after resolving)
   dateFrom?: string; // YYYY-MM-DD
   dateTo?: string; // YYYY-MM-DD
-  type: "all" | "shorts" | "long";
+  type: "all" | "shorts" | "long" | "long8";
   minViews?: number;
   maxViews?: number;
   minSubs?: number;
@@ -68,6 +68,7 @@ export function applyFilters(videos: FoundVideo[], channels: Map<string, Channel
   for (const v of videos) {
     if (f.type === "shorts" && !v.isShort) continue;
     if (f.type === "long" && v.isShort) continue;
+    if (f.type === "long8" && (v.isShort || v.durationSec <= 480)) continue; // long-form only, over 8 minutes
     if (f.minViews != null && v.views < f.minViews) continue;
     if (f.maxViews != null && v.views > f.maxViews) continue;
     const arr = byChannel.get(v.channelId) ?? [];
