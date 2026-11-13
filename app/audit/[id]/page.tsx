@@ -81,7 +81,7 @@ export default function AuditReport() {
 
       <div className="card">
         <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-          <div className={`score-ring level-${audit.level}`}><b>{audit.score}</b><small>risk / 100</small></div>
+          <div className={`score-ring level-${audit.level}`} style={{ "--p": audit.score } as React.CSSProperties}><b>{audit.score}</b><small>risk / 100</small></div>
           <div style={{ flex: "1 1 280px" }}>
             <h1 style={{ fontSize: "1.6rem", margin: "0 0 6px" }}>{audit.channel_title ?? audit.channel_input}</h1>
             <p className="muted" style={{ margin: 0 }}>
