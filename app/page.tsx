@@ -36,6 +36,7 @@ export default function Home() {
         <Link className="logo" href="/">{PRODUCT_NAME.split(" ")[0]} <span>Shield</span></Link>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-ghost btn-sm" href="/login">Sign in</Link>
+          <Link className="btn btn-ghost btn-sm" href="/finder">Viral Finder</Link>
           <Link className="btn btn-sm" href="/dashboard">Run a free audit</Link>
         </div>
       </div>
@@ -74,6 +75,7 @@ export default function Home() {
           ["Upload bursts & pacing", "Bulk-upload days and machine-regular cadence that look automated rather than made."],
           ["Duration clustering", "Lots of videos at near-identical lengths suggests a fixed template doing the work."],
           ["Re-upload patterns", "Duplicate titles and Shorts/long-form mix that can indicate recycled uploads."],
+          ["Viral Content Finder", "Discover channels with breakout videos by niche, date range, views, subscribers and channel age — then audit the risk before you copy the format."],
           ["Guided self-check", "Stock footage, AI voice, commentary and transformation — the signals metadata can't see, asked directly and reported separately as self-reported."],
           ["Provenance Vault", "Timestamped storage of scripts, voiceover sources and project files per video — the 'made by a human team' evidence an appeal is built from."],
         ].map(([t, d]) => (
