@@ -29,12 +29,8 @@ a { color: #3478C9; }
   font-weight: 800; font-size: 1.14rem; color: #142D4C; text-decoration: none; letter-spacing: -.01em;
   display: inline-flex; align-items: center; gap: 9px;
 }
-.logo::before {
-  content: ""; width: 30px; height: 30px; border-radius: 9px; flex: none;
-  background: linear-gradient(135deg, #142D4C, #3478C9 60%, #18A999);
-  box-shadow: 0 4px 10px rgba(20, 45, 76, .28);
-}
 .logo span { color: #18A999; }
+.yt-mark { flex: none; display: block; filter: drop-shadow(0 3px 6px rgba(255, 0, 51, .30)); }
 
 h1, h2, h3 { font-family: "Poppins", "Inter", sans-serif; }
 h1 { font-size: clamp(1.75rem, 5.4vw, 2.95rem); line-height: 1.1; letter-spacing: -.02em; margin: 18px 0 14px; color: #142D4C; font-weight: 800; }
