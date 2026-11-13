@@ -44,6 +44,25 @@ export default function FinderPage() {
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
+  const [breakingDown, setBreakingDown] = useState<string>("");
+  async function breakDown(channelUrl: string) {
+    if (!session) return;
+    setBreakingDown(channelUrl); setErr("");
+    try {
+      const res = await fetch("/api/breakdown", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ channel: channelUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Breakdown failed.");
+      router.push(`/breakdown/${data.id}`);
+    } catch (e2: any) {
+      setErr(e2.message ?? "Breakdown failed.");
+      setBreakingDown("");
+    }
+  }
+
   async function search(e: React.FormEvent) {
     e.preventDefault();
     if (!session) return;
@@ -172,7 +191,10 @@ export default function FinderPage() {
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {c.likelyFaceless && <span className="chip">Likely faceless (guess)</span>}
-                    <Link className="btn btn-sm" href={`/dashboard?channel=${encodeURIComponent(c.url)}`}>Audit this channel</Link>
+                    <button className="btn btn-sm" disabled={breakingDown === c.url} onClick={() => breakDown(c.url)}>
+                      {breakingDown === c.url ? "Building plan…" : "Break down & plan"}
+                    </button>
+                    <Link className="btn btn-ghost btn-sm" href={`/dashboard?channel=${encodeURIComponent(c.url)}`}>Audit this channel</Link>
                   </div>
                 </div>
                 <div style={{ marginTop: 10 }}>
