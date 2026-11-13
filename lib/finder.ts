@@ -115,15 +115,21 @@ const SEED_STOP = new Set([
 ]);
 
 /** Derive a niche seed query from a reference channel's recent video titles. */
+function seedWordOk(w: string): boolean {
+  if (w.length < 3 || SEED_STOP.has(w)) return false;
+  const letters = (w.match(/\p{L}/gu) ?? []).length;
+  return letters >= 3 && letters / w.length >= 0.8; // kills "000", "10k", "100" prize-amount fragments
+}
+
 export function extractSeedKeywords(channelTitle: string, videoTitles: string[]): string {
   const counts = new Map<string, number>();
-  const bump = (w: string) => { if (w.length >= 3 && !SEED_STOP.has(w)) counts.set(w, (counts.get(w) ?? 0) + 1); };
+  const bump = (w: string) => { if (seedWordOk(w)) counts.set(w, (counts.get(w) ?? 0) + 1); };
   for (const t of videoTitles) {
     const words = t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
     words.forEach(bump);
     for (let i = 0; i + 1 < words.length; i++) {
       const bg = words[i] + " " + words[i + 1];
-      if (!SEED_STOP.has(words[i]) && !SEED_STOP.has(words[i + 1])) counts.set(bg, (counts.get(bg) ?? 0) + 1.5);
+      if (seedWordOk(words[i]) && seedWordOk(words[i + 1])) counts.set(bg, (counts.get(bg) ?? 0) + 1.5);
     }
   }
   const chanWords = new Set(channelTitle.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/));
