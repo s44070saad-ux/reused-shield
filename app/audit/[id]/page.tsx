@@ -85,7 +85,7 @@ export default function AuditReport() {
           <div style={{ flex: "1 1 280px" }}>
             <h1 style={{ fontSize: "1.6rem", margin: "0 0 6px" }}>{audit.channel_title ?? audit.channel_input}</h1>
             <p className="muted" style={{ margin: 0 }}>
-              Risk level: <b style={{ color: "#fff" }}>{audit.level}</b> · {audit.video_count_sampled} recent public videos sampled · {new Date(audit.created_at).toLocaleDateString()}
+              Risk level: <b style={{ color: "#142D4C" }}>{audit.level}</b> · {audit.video_count_sampled} recent public videos sampled · {new Date(audit.created_at).toLocaleDateString()}
               {audit.subscriber_count ? ` · ${audit.subscriber_count.toLocaleString()} subscribers` : ""}
               {audit.channel_url ? <> · <a href={audit.channel_url} target="_blank" rel="noreferrer">View channel</a></> : null}
             </p>
