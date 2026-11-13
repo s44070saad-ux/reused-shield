@@ -36,6 +36,8 @@ export default function Dashboard() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.replace("/login"); return; }
       setSession(data.session);
+      const prefill = new URLSearchParams(window.location.search).get("channel");
+      if (prefill) setChannel(prefill);
       await load();
       setLoading(false);
     });
@@ -91,7 +93,10 @@ export default function Dashboard() {
     <main className="wrap">
       <div className="topbar">
         <Link className="logo" href="/">{PRODUCT_NAME.split(" ")[0]} <span>Shield</span></Link>
-        <button className="btn btn-ghost btn-sm" onClick={signOut}>Sign out</button>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link className="btn btn-sm" href="/finder">Viral Content Finder</Link>
+          <button className="btn btn-ghost btn-sm" onClick={signOut}>Sign out</button>
+        </div>
       </div>
 
       <h1 style={{ fontSize: "2rem" }}>Your channels</h1>
