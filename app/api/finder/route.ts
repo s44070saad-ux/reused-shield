@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       referenceChannel: referenceChannelId,
       dateFrom: body.dateFrom || undefined,
       dateTo: body.dateTo || undefined,
-      type: ["shorts", "long"].includes(body.type) ? body.type : "all",
+      type: ["shorts", "long", "long8"].includes(body.type) ? body.type : "all",
       minViews: num(body.minViews),
       maxViews: num(body.maxViews),
       minSubs: num(body.minSubs),
