@@ -67,6 +67,22 @@ export interface Deadline {
   created_at: string;
 }
 
+export interface FinderSearch {
+  id: string;
+  user_id: string;
+  query_key: string;
+  filters: Record<string, any>;
+  results: any[];
+  created_at: string;
+}
+
+export function fmtNum(n: number | null | undefined): string {
+  if (n == null) return "—";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
+
 /** Deadline math for YouTube's clocks, computed from the rejection date. */
 export function deadlineDates(d: Deadline) {
   const base = new Date(d.rejection_date + "T00:00:00Z");
