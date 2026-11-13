@@ -1,92 +1,99 @@
+/* Clinical Pro — refined navy / blue / teal light theme (same family as PharmaHub).
+   Navy #142D4C · Blue #3478C9 · Teal #18A999 · Background #F5F7FA */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; overflow-x: hidden; }
 body {
-  background: #070b14; color: #e9eef7;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #F5F7FA; color: #1c2b3a;
+  font-family: "Poppins", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 16px; line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-a { color: #fbbf24; }
+a { color: #3478C9; }
 .wrap { max-width: 1060px; margin: 0 auto; padding: 0 18px 70px; }
 .topbar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 16px 0; flex-wrap: wrap;
 }
-.logo { font-weight: 800; font-size: 1.12rem; color: #fff; text-decoration: none; letter-spacing: -.01em; }
-.logo span { color: #f59e0b; }
-h1 { font-size: clamp(1.7rem, 5.4vw, 2.9rem); line-height: 1.12; letter-spacing: -.02em; margin: 18px 0 14px; }
-h2 { font-size: clamp(1.3rem, 3.6vw, 1.8rem); letter-spacing: -.01em; margin: 34px 0 12px; }
-h3 { margin: 0 0 8px; font-size: 1.05rem; }
-p.lede { font-size: 1.08rem; color: #b8c4d8; max-width: 640px; }
+.logo { font-weight: 800; font-size: 1.12rem; color: #142D4C; text-decoration: none; letter-spacing: -.01em; }
+.logo span { color: #18A999; }
+h1 { font-size: clamp(1.7rem, 5.4vw, 2.9rem); line-height: 1.12; letter-spacing: -.02em; margin: 18px 0 14px; color: #142D4C; }
+h2 { font-size: clamp(1.3rem, 3.6vw, 1.8rem); letter-spacing: -.01em; margin: 34px 0 12px; color: #142D4C; }
+h3 { margin: 0 0 8px; font-size: 1.05rem; color: #142D4C; }
+p.lede { font-size: 1.08rem; color: #47617a; max-width: 640px; }
 .card {
-  background: #0d1524; border: 1px solid #1d2a44; border-radius: 16px;
+  background: #fff; color: #1c2b3a;
+  border: 1px solid #dfe7f0; border-radius: 16px;
   padding: 22px; margin-top: 16px;
+  box-shadow: 0 1px 2px rgba(20, 45, 76, .05), 0 8px 24px rgba(20, 45, 76, .06);
 }
-.card.light { background: #fff; color: #0b1220; border-color: #e2e8f2; }
+.card.light { background: #fff; color: #1c2b3a; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   font-weight: 700; padding: 12px 22px; min-height: 48px; border-radius: 11px;
-  border: 0; cursor: pointer; background: #f59e0b; color: #16100a; text-decoration: none;
+  border: 0; cursor: pointer; color: #fff; text-decoration: none;
+  background: linear-gradient(135deg, #142D4C 0%, #3478C9 55%, #18A999 130%);
+  box-shadow: 0 4px 14px rgba(20, 45, 76, .22);
   font-size: 1rem;
 }
-.btn:hover { background: #fbbf24; }
+.btn:hover { filter: brightness(1.07); }
 .btn:disabled { opacity: .6; cursor: wait; }
-.btn-ghost { background: transparent; border: 1.5px solid #33456b; color: #e9eef7; }
-.btn-ghost:hover { background: #111c31; }
+.btn-ghost { background: #fff; border: 1.5px solid #b9cbdf; color: #142D4C; box-shadow: none; }
+.btn-ghost:hover { background: #eef4fa; filter: none; }
 .btn-sm { min-height: 44px; padding: 9px 16px; font-size: .92rem; }
 .field { margin-bottom: 14px; }
-.field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .95rem; }
+.field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .95rem; color: #24384f; }
 .field-input, .field select.field-input {
   width: 100%; padding: 12px 14px; border-radius: 10px;
-  border: 1.5px solid #2a3a5c; background: #0a1120; color: #e9eef7; min-height: 48px; font-size: 16px;
+  border: 1.5px solid #c9d6e4; background: #fff; color: #1c2b3a; min-height: 48px; font-size: 16px;
 }
-.card.light .field-input { border-color: #d5deee; background: #fff; color: #0b1220; }
+.field-input:focus { outline: none; border-color: #18A999; box-shadow: 0 0 0 3px rgba(24, 169, 153, .18); }
 textarea.field-input { min-height: 90px; resize: vertical; }
-.muted { color: #93a5c2; }
-.err { color: #f87171; font-weight: 600; }
-.ok { color: #34d399; font-weight: 600; }
+.muted { color: #647d95; }
+.err { color: #dc2626; font-weight: 600; }
+.ok { color: #0b7a6e; font-weight: 600; }
 .grid { display: grid; gap: 14px; }
 @media (min-width: 720px) { .grid-2 { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
 .score-ring {
   width: 132px; height: 132px; border-radius: 50%; flex: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border: 9px solid #f59e0b; background: #0a1120;
+  border: 9px solid #18A999; background: #fff; color: #142D4C;
+  box-shadow: 0 6px 18px rgba(20, 45, 76, .10);
 }
 .score-ring b { font-size: 2.1rem; line-height: 1; }
-.score-ring small { color: #93a5c2; }
-.level-Critical { border-color: #ef4444 !important; }
-.level-High { border-color: #f97316 !important; }
-.level-Moderate { border-color: #f59e0b !important; }
-.level-Low { border-color: #22c55e !important; }
-.bar { height: 9px; border-radius: 99px; background: #1d2a44; overflow: hidden; }
-.bar > div { height: 100%; background: #f59e0b; border-radius: 99px; }
+.score-ring small { color: #647d95; }
+.level-Critical { border-color: #dc2626 !important; }
+.level-High { border-color: #ea580c !important; }
+.level-Moderate { border-color: #D97706 !important; }
+.level-Low { border-color: #16a34a !important; }
+.bar { height: 9px; border-radius: 99px; background: #e3ebf3; overflow: hidden; }
+.bar > div { height: 100%; background: linear-gradient(90deg, #3478C9, #18A999); border-radius: 99px; }
 table { border-collapse: collapse; width: 100%; font-size: .9rem; }
-th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #1d2a44; vertical-align: top; }
-.card.light th, .card.light td { border-color: #e2e8f2; }
-th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: #7e90b1; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #e3ebf3; vertical-align: top; }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: #647d95; }
 .flag {
-  display: inline-block; background: #3a1414; color: #fca5a5; border: 1px solid #7f1d1d;
+  display: inline-block; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
   font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin: 2px 4px 2px 0;
 }
 .chip {
-  display: inline-block; background: #14213d; border: 1px solid #2a3a5c; color: #c9d6ee;
-  font-size: .78rem; padding: 3px 10px; border-radius: 99px; margin: 2px 4px 2px 0;
+  display: inline-block; background: #EAF1F8; border: 1px solid #c9d9ec; color: #142D4C;
+  font-size: .78rem; font-weight: 600; padding: 3px 10px; border-radius: 99px; margin: 2px 4px 2px 0;
 }
 .sample-tag {
-  display: inline-block; background: #f59e0b; color: #16100a; font-weight: 800;
+  display: inline-block; background: #D97706; color: #fff; font-weight: 800;
   font-size: .72rem; letter-spacing: .08em; padding: 3px 10px; border-radius: 6px;
 }
 .honesty {
-  border: 1px dashed #92600a; background: #1a1407; color: #fde9c0;
+  border: 1px dashed #D97706; background: #FFF7E6; color: #7c4a03;
   border-radius: 12px; padding: 14px 16px; font-size: .92rem; margin-top: 16px;
 }
 .clock-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .clock {
-  flex: 1 1 150px; background: #0d1524; border: 1px solid #1d2a44; border-radius: 14px; padding: 16px;
+  flex: 1 1 150px; background: #fff; border: 1px solid #dfe7f0; border-radius: 14px; padding: 16px;
+  box-shadow: 0 1px 2px rgba(20, 45, 76, .05), 0 8px 24px rgba(20, 45, 76, .06);
 }
-.clock b { font-size: 1.7rem; display: block; line-height: 1.1; }
-details { border: 1px solid #1d2a44; border-radius: 12px; padding: 12px 16px; margin-top: 10px; background: #0d1524; }
-summary { cursor: pointer; font-weight: 700; min-height: 32px; }
+.clock b { font-size: 1.7rem; display: block; line-height: 1.1; color: #142D4C; }
+details { border: 1px solid #dfe7f0; border-radius: 12px; padding: 12px 16px; margin-top: 10px; background: #fbfdff; }
+summary { cursor: pointer; font-weight: 700; min-height: 32px; color: #142D4C; }
 @media (max-width: 640px) {
   .card { padding: 17px 15px; border-radius: 14px; }
   table { font-size: .82rem; }
@@ -96,6 +103,6 @@ summary { cursor: pointer; font-weight: 700; min-height: 32px; }
 @media print {
   body { background: #fff; color: #000; }
   .no-print { display: none !important; }
-  .card { background: #fff; color: #000; border-color: #999; }
+  .card { background: #fff; color: #000; border-color: #999; box-shadow: none; }
   a { color: #000; }
 }

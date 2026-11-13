@@ -41,7 +41,7 @@ export default function Home() {
         </div>
       </div>
 
-      <h1>Find out your reused-content risk <span style={{ color: "#f59e0b" }}>before</span> YouTube tells you.</h1>
+      <h1>Find out your reused-content risk <span style={{ color: "#18A999" }}>before</span> YouTube tells you.</h1>
       <p className="lede">
         Since YouTube's July 2025 clarification of the reused-content policy — enforced as "inauthentic,
         mass-produced" content — faceless and automation channels have been losing monetization in waves,
