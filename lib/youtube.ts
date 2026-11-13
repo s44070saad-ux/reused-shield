@@ -159,6 +159,29 @@ export async function searchViralVideos(f: FinderFilters): Promise<{ videos: Fou
   return { videos, channels };
 }
 
+import { extractSeedKeywords } from "./finder";
+
+export interface ReferenceSeed {
+  channelId: string;
+  title: string;
+  url: string;
+  subs: number | null;
+  keywords: string;
+}
+
+/** Resolve a reference channel and derive a niche seed query from its recent titles. Cost: ~3 units. */
+export async function getReferenceSeed(input: string): Promise<ReferenceSeed> {
+  const ch = await getChannel(input);
+  const pl = await yt("playlistItems", { part: "contentDetails", playlistId: ch.uploadsPlaylist, maxResults: "15" });
+  const ids = (pl.items ?? []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);
+  let titles: string[] = [];
+  if (ids.length) {
+    const vd = await yt("videos", { part: "snippet", id: ids.join(",") });
+    titles = (vd.items ?? []).map((v: any) => v.snippet?.title ?? "").filter(Boolean);
+  }
+  return { channelId: ch.id, title: ch.title, url: ch.url, subs: ch.subscriberCount, keywords: extractSeedKeywords(ch.title, titles) };
+}
+
 export async function getRecentVideos(uploadsPlaylist: string, max = 30): Promise<RawVideo[]> {
   const pl = await yt("playlistItems", { part: "contentDetails", playlistId: uploadsPlaylist, maxResults: String(max) });
   const ids = (pl.items ?? []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);

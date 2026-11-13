@@ -4,6 +4,7 @@
 
 export interface FinderFilters {
   keyword: string;
+  referenceChannel?: string; // channel URL/@handle/ID the search was seeded from (id form after resolving)
   dateFrom?: string; // YYYY-MM-DD
   dateTo?: string; // YYYY-MM-DD
   type: "all" | "shorts" | "long";
@@ -103,5 +104,40 @@ export function applyFilters(videos: FoundVideo[], channels: Map<string, Channel
 }
 
 export function finderKey(f: FinderFilters): string {
-  return [f.keyword.trim().toLowerCase(), f.dateFrom ?? "", f.dateTo ?? "", f.type, f.minViews ?? "", f.maxViews ?? "", f.minSubs ?? "", f.maxSubs ?? "", f.maxChannelAgeYears ?? "", f.facelessOnly ? "fl" : ""].join("|");
+  return [f.keyword.trim().toLowerCase(), f.referenceChannel ?? "", f.dateFrom ?? "", f.dateTo ?? "", f.type, f.minViews ?? "", f.maxViews ?? "", f.minSubs ?? "", f.maxSubs ?? "", f.maxChannelAgeYears ?? "", f.facelessOnly ? "fl" : ""].join("|");
+}
+
+const SEED_STOP = new Set([
+  "the","a","an","of","to","in","on","for","and","or","vs","with","how","why","what","is","it",
+  "official","video","videos","new","ft","feat","episode","ep","part","full","hd","4k","2024","2025","2026",
+  "my","i","you","your","this","that","from","by","at","be","are","was","were","will","can","not","no","yes",
+  "shorts","short","viral","best","top","get","got","one","all","about","into","out","up","down","over","after","before",
+]);
+
+/** Derive a niche seed query from a reference channel's recent video titles. */
+export function extractSeedKeywords(channelTitle: string, videoTitles: string[]): string {
+  const counts = new Map<string, number>();
+  const bump = (w: string) => { if (w.length >= 3 && !SEED_STOP.has(w)) counts.set(w, (counts.get(w) ?? 0) + 1); };
+  for (const t of videoTitles) {
+    const words = t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
+    words.forEach(bump);
+    for (let i = 0; i + 1 < words.length; i++) {
+      const bg = words[i] + " " + words[i + 1];
+      if (!SEED_STOP.has(words[i]) && !SEED_STOP.has(words[i + 1])) counts.set(bg, (counts.get(bg) ?? 0) + 1.5);
+    }
+  }
+  const chanWords = new Set(channelTitle.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/));
+  const ranked = [...counts.entries()]
+    .filter(([w]) => !chanWords.has(w)) // drop the channel's own name words
+    .sort((a, b) => b[1] - a[1]);
+  const picks: string[] = [];
+  const usedWords = new Set<string>();
+  for (const [w] of ranked) {
+    if (picks.length >= 2) break;
+    const words = w.split(" ");
+    if (words.some((x) => usedWords.has(x))) continue; // no overlapping picks like "scary horror" + "horror story"
+    picks.push(w);
+    words.forEach((x) => usedWords.add(x));
+  }
+  return picks.join(" ");
 }
