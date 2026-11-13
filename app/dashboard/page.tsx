@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, type Audit, type Deadline, deadlineDates, daysLeft } from "@/lib/supabaseClient";
 import { SELF_CHECK_QUESTIONS } from "@/lib/selfCheck";
-import { PRODUCT_NAME, HONESTY_NOTE } from "@/lib/config";
+import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS } from "@/lib/config";
 import type { Session } from "@supabase/supabase-js";
 
 export default function Dashboard() {
@@ -95,6 +95,9 @@ export default function Dashboard() {
         <Link className="logo" href="/"><svg className="yt-mark" width="32" height="23" viewBox="0 0 30 21" aria-hidden="true"><rect width="30" height="21" rx="5" fill="#FF0033"/><path d="M12.2 6.4l7 4.1-7 4.1z" fill="#fff"/></svg>{PRODUCT_NAME.replace(/ Shield$/, "")} <span>Shield</span></Link>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-sm" href="/finder">Viral Content Finder</Link>
+          {session && ADMIN_EMAILS.includes((session.user.email ?? "").toLowerCase()) && (
+            <Link className="btn btn-ghost btn-sm" href="/admin">Admin</Link>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={signOut}>Sign out</button>
         </div>
       </div>
