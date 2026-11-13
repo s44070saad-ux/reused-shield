@@ -9,7 +9,7 @@ import type { Session } from "@supabase/supabase-js";
 import type { FinderChannel } from "@/lib/finder";
 
 const EMPTY = {
-  keyword: "", dateFrom: "", dateTo: "", type: "all",
+  keyword: "", referenceChannel: "", dateFrom: "", dateTo: "", type: "all",
   minViews: "", maxViews: "", minSubs: "", maxSubs: "", maxChannelAgeYears: "",
   facelessOnly: false,
 };
@@ -22,6 +22,7 @@ export default function FinderPage() {
   const [running, setRunning] = useState(false);
   const [err, setErr] = useState("");
   const [results, setResults] = useState<FinderChannel[] | null>(null);
+  const [reference, setReference] = useState<{ title: string; url: string; subs: number | null; keywords: string } | null>(null);
   const [cached, setCached] = useState(false);
   const [history, setHistory] = useState<FinderSearch[]>([]);
 
@@ -60,6 +61,7 @@ export default function FinderPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Search failed.");
       setResults(data.results as FinderChannel[]);
+      setReference(data.reference ?? null);
       setCached(Boolean(data.cached));
       loadHistory();
     } catch (e2: any) {
@@ -89,7 +91,12 @@ export default function FinderPage() {
         <form onSubmit={search}>
           <div className="field">
             <label htmlFor="f-keyword">Niche keyword</label>
-            <input id="f-keyword" className="field-input" required value={form.keyword} onChange={(e) => set("keyword", e.target.value)} placeholder="e.g. horror stories, space facts, quiz" />
+            <input id="f-keyword" className="field-input" value={form.keyword} onChange={(e) => set("keyword", e.target.value)} placeholder="e.g. horror stories, space facts, quiz" />
+          </div>
+          <div className="field">
+            <label htmlFor="f-ref">Reference channel <span className="muted">(optional — find channels like this one)</span></label>
+            <input id="f-ref" className="field-input" value={form.referenceChannel} onChange={(e) => set("referenceChannel", e.target.value)} placeholder="Paste a channel link or @handle — its niche is derived from its recent videos" />
+            <p className="muted" style={{ margin: "6px 0 0", fontSize: ".88rem" }}>Give a keyword, a reference channel, or both (keyword wins for the search; the reference still shows what it was seeded from).</p>
           </div>
           <div className="grid grid-2">
             <div className="field">
@@ -141,16 +148,23 @@ export default function FinderPage() {
       {results !== null && (
         <>
           <h2>{results.length} channel{results.length === 1 ? "" : "s"} found {cached && <span className="chip">cached — 0 quota used</span>}</h2>
+          {reference && (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Seeded from reference channel: <a href={reference.url} target="_blank" rel="noreferrer"><b>{reference.title}</b></a>
+              {reference.subs != null && <> ({fmtNum(reference.subs)} subscribers)</>}
+              {reference.keywords && <> · niche keywords used: <b>{reference.keywords}</b></>}
+            </p>
+          )}
           {results.length === 0 && <p className="muted">Nothing matched all those filters. Loosen one — usually max subscribers or the date range is the tightest.</p>}
           <div className="grid">
             {results.map((c) => (
               <div className="card" key={c.id} style={{ marginTop: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <div>
-                    <a href={c.url} target="_blank" rel="noreferrer" style={{ fontWeight: 800, fontSize: "1.06rem", color: "#fff" }}>{c.title}</a><br />
+                    <a href={c.url} target="_blank" rel="noreferrer" style={{ fontWeight: 800, fontSize: "1.06rem", color: "#142D4C" }}>{c.title}</a><br />
                     <span className="muted" style={{ fontSize: ".88rem" }}>
                       {fmtNum(c.subs)} subscribers · channel age {c.channelAgeYears}y · top video {fmtNum(c.topViews)} views
-                      {c.viralRatio != null && <> · <b style={{ color: "#fbbf24" }}>{c.viralRatio}× views vs subs</b></>}
+                      {c.viralRatio != null && <> · <b style={{ color: "#D97706" }}>{c.viralRatio}× views vs subs</b></>}
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -181,10 +195,10 @@ export default function FinderPage() {
           <div className="grid">
             {history.map((h) => (
               <div className="card" key={h.id} style={{ marginTop: 0, padding: "14px 18px" }}>
-                <button className="btn btn-ghost btn-sm" style={{ float: "right" }} onClick={() => setResults(h.results as FinderChannel[])}>
+                <button className="btn btn-ghost btn-sm" style={{ float: "right" }} onClick={() => { setResults(h.results as FinderChannel[]); setReference(h.filters.referenceTitle ? { title: String(h.filters.referenceTitle), url: String(h.filters.referenceUrl ?? "#"), subs: null, keywords: String(h.filters.seedKeywords ?? "") } : null); }}>
                   View results
                 </button>
-                <b>{String(h.filters.keyword ?? "")}</b>{" "}
+                <b>{String(h.filters.keyword ?? "")}</b>{h.filters.referenceTitle ? <span className="muted"> · ref: {String(h.filters.referenceTitle)}</span> : null}{" "}
                 <span className="muted" style={{ fontSize: ".88rem" }}>
                   {new Date(h.created_at).toLocaleString()} · {Array.isArray(h.results) ? h.results.length : 0} channels
                   {h.filters.type && h.filters.type !== "all" ? ` · ${h.filters.type}` : ""}
