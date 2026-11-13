@@ -12,6 +12,7 @@ export interface ChannelInfo {
   url: string;
   subscriberCount: number | null;
   uploadsPlaylist: string;
+  createdAt?: string;
 }
 
 function key() {
@@ -58,6 +59,7 @@ export async function getChannel(input: string): Promise<ChannelInfo> {
     url: `https://www.youtube.com/channel/${item.id}`,
     subscriberCount: item.statistics?.hiddenSubscriberCount ? null : Number(item.statistics?.subscriberCount ?? NaN) || null,
     uploadsPlaylist: item.contentDetails?.relatedPlaylists?.uploads,
+    createdAt: item.snippet?.publishedAt,
   };
 }
 
@@ -188,6 +190,33 @@ export async function getReferenceSeed(input: string): Promise<ReferenceSeed> {
     titles = (vd.items ?? []).map((v: any) => v.snippet?.title ?? "").filter(Boolean);
   }
   return { channelId: ch.id, title: ch.title, url: ch.url, subs: ch.subscriberCount, keywords: extractSeedKeywords(ch.title, titles) };
+}
+
+import type { BreakdownVideo } from "./breakdown";
+
+/** Recent videos WITH view counts, for the Channel Breakdown. Same cost shape as getRecentVideos. */
+export async function getBreakdownVideos(uploadsPlaylist: string, max = 30): Promise<BreakdownVideo[]> {
+  const pl = await yt("playlistItems", { part: "contentDetails", playlistId: uploadsPlaylist, maxResults: String(max) });
+  const ids = (pl.items ?? []).map((i: any) => i.contentDetails?.videoId).filter(Boolean);
+  if (!ids.length) return [];
+  const vd = await yt("videos", { part: "snippet,contentDetails,statistics", id: ids.join(",") });
+  const byId = new Map<string, any>((vd.items ?? []).map((v: any) => [v.id, v]));
+  const videos: BreakdownVideo[] = [];
+  for (const id of ids) {
+    const v = byId.get(id);
+    if (!v) continue;
+    const thumb = v.snippet?.thumbnails?.medium?.url ?? v.snippet?.thumbnails?.default?.url;
+    videos.push({
+      id,
+      title: v.snippet?.title ?? "",
+      description: v.snippet?.description ?? "",
+      publishedAt: v.snippet?.publishedAt ?? "",
+      durationSec: parseDuration(v.contentDetails?.duration ?? ""),
+      views: Number(v.statistics?.viewCount ?? 0),
+      thumbnailHash: thumb ? await thumbnailHash(thumb) : null,
+    });
+  }
+  return videos;
 }
 
 export async function getRecentVideos(uploadsPlaylist: string, max = 30): Promise<RawVideo[]> {
