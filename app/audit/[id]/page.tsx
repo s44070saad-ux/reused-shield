@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase, type Audit, type ProvenanceEntry } from "@/lib/supabaseClient";
+import { diffAudits } from "@/lib/auditDiff";
 import { SELF_CHECK_QUESTIONS, selfCheckFlags } from "@/lib/selfCheck";
 import { HONESTY_NOTE } from "@/lib/config";
 import type { Session } from "@supabase/supabase-js";
@@ -21,6 +22,8 @@ export default function AuditReport() {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [audit, setAudit] = useState<Audit | null>(null);
+  const [prevAudit, setPrevAudit] = useState<Audit | null>(null);
+  const [history, setHistory] = useState<Audit[]>([]);
   const [prov, setProv] = useState<ProvenanceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -32,6 +35,17 @@ export default function AuditReport() {
     const { data, error } = await supabase.from("audits").select("*").eq("id", id).single();
     if (error || !data) { setErr("Audit not found — or it belongs to a different account."); setLoading(false); return; }
     setAudit(data as Audit);
+    // Sibling audits of the same channel (for the since-last-audit comparison + trend).
+    const all = await supabase.from("audits").select("*").order("created_at", { ascending: true });
+    if (all.data) {
+      const me = data as Audit;
+      const sibs = (all.data as Audit[]).filter((a) =>
+        me.channel_id ? a.channel_id === me.channel_id : a.channel_title === me.channel_title,
+      );
+      setHistory(sibs);
+      const idx = sibs.findIndex((a) => a.id === me.id);
+      setPrevAudit(idx > 0 ? sibs[idx - 1] : null);
+    }
     const p = await supabase.from("provenance_entries").select("*").eq("audit_id", id).order("created_at", { ascending: false });
     if (p.data) setProv(p.data as ProvenanceEntry[]);
     setLoading(false);
@@ -93,6 +107,70 @@ export default function AuditReport() {
         </div>
         <div className="honesty">{HONESTY_NOTE}</div>
       </div>
+
+      {prevAudit && (() => {
+        const diff = diffAudits(prevAudit, audit);
+        const improved = diff.scoreDelta < 0;
+        const worse = diff.scoreDelta > 0;
+        return (
+          <>
+            <h2>Since your last audit — {new Date(prevAudit.created_at).toLocaleDateString()}</h2>
+            <div className="card" style={{ marginTop: 0 }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                <span className={`score-ring sm level-${prevAudit.level}`} style={{ "--p": prevAudit.score } as React.CSSProperties}><b>{prevAudit.score}</b></span>
+                <span style={{ fontSize: "1.4rem", color: "#647d95" }}>→</span>
+                <span className={`score-ring sm level-${audit.level}`} style={{ "--p": audit.score } as React.CSSProperties}><b>{audit.score}</b></span>
+                <div>
+                  <b style={{ fontSize: "1.1rem", color: improved ? "#0b7a6e" : worse ? "#dc2626" : "#142D4C" }}>
+                    {diff.scoreDelta === 0 ? "No change in risk score" : improved ? `▼ ${Math.abs(diff.scoreDelta)} points — risk is DOWN` : `▲ ${diff.scoreDelta} points — risk is UP`}
+                  </b><br />
+                  <span className="muted">Level: {diff.levelFrom} → {diff.levelTo} · Flagged videos: {diff.flaggedBefore} → {diff.flaggedAfter}</span>
+                </div>
+              </div>
+
+              {history.length >= 2 && (
+                <p style={{ margin: "14px 0 0" }}>
+                  <span className="muted" style={{ marginRight: 8 }}>Score trend:</span>
+                  {history.map((h, i) => (
+                    <span key={h.id}>{i > 0 && <span className="muted"> → </span>}<b style={{ color: h.id === audit.id ? "#142D4C" : "#647d95" }}>{h.score}</b></span>
+                  ))}
+                  <span className="muted"> ({history.length} audits)</span>
+                </p>
+              )}
+
+              <div style={{ overflowX: "auto", marginTop: 14 }}>
+                <table>
+                  <thead><tr><th>Signal</th><th>Before</th><th>Now</th><th>Change</th></tr></thead>
+                  <tbody>
+                    {diff.signalDeltas.map((s) => (
+                      <tr key={s.key}>
+                        <td>{s.label}</td><td>{s.before}</td><td>{s.after}</td>
+                        <td style={{ color: s.delta < 0 ? "#0b7a6e" : s.delta > 0 ? "#dc2626" : "#647d95", fontWeight: 700 }}>
+                          {s.delta === 0 ? "—" : s.delta < 0 ? `▼ ${Math.abs(s.delta)}` : `▲ ${s.delta}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {diff.resolved.length > 0 && (
+                <p style={{ margin: "14px 0 0" }}><b style={{ color: "#0b7a6e" }}>Resolved flags</b> <span className="muted">(on videos in both audits)</span><br />
+                  {diff.resolved.map((r, i) => <span className="flag" key={i} style={{ background: "#ecfdf5", color: "#065f46", borderColor: "#a7f3d0" }}>✓ {r.flag} — {r.videoTitle}</span>)}
+                </p>
+              )}
+              {diff.added.length > 0 && (
+                <p style={{ margin: "10px 0 0" }}><b style={{ color: "#dc2626" }}>New flags</b> <span className="muted">(on videos in both audits)</span><br />
+                  {diff.added.map((r, i) => <span className="flag" key={i}>▲ {r.flag} — {r.videoTitle}</span>)}
+                </p>
+              )}
+              {diff.resolved.length === 0 && diff.added.length === 0 && (
+                <p className="muted" style={{ margin: "12px 0 0" }}>No flag changes on the {diff.comparedVideos} videos present in both audits. Videos that rotated out of the recent window aren't counted as resolved.</p>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {audit.reasons.length > 0 && (
         <>
