@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { searchViralVideos } from "@/lib/youtube";
+import { searchViralVideos, getReferenceSeed } from "@/lib/youtube";
 import { applyFilters, finderKey, type FinderFilters } from "@/lib/finder";
 
 export const runtime = "nodejs";
@@ -30,8 +30,21 @@ export async function POST(req: NextRequest) {
     const userId = userData.user.id;
 
     const body = await req.json();
+    const referenceInput = String(body.referenceChannel ?? "").trim();
+    let reference: { title: string; url: string; subs: number | null; keywords: string } | null = null;
+    let referenceChannelId: string | undefined;
+    if (referenceInput) {
+      try {
+        const seed = await getReferenceSeed(referenceInput);
+        reference = { title: seed.title, url: seed.url, subs: seed.subs, keywords: seed.keywords };
+        referenceChannelId = seed.channelId;
+      } catch (e: any) {
+        return NextResponse.json({ error: `Reference channel problem: ${e?.message ?? "could not read that channel."}` }, { status: 400 });
+      }
+    }
     const filters: FinderFilters = {
-      keyword: String(body.keyword ?? "").trim(),
+      keyword: String(body.keyword ?? "").trim() || reference?.keywords || "",
+      referenceChannel: referenceChannelId,
       dateFrom: body.dateFrom || undefined,
       dateTo: body.dateTo || undefined,
       type: ["shorts", "long"].includes(body.type) ? body.type : "all",
@@ -42,7 +55,7 @@ export async function POST(req: NextRequest) {
       maxChannelAgeYears: num(body.maxChannelAgeYears),
       facelessOnly: Boolean(body.facelessOnly),
     };
-    if (!filters.keyword) return NextResponse.json({ error: "Enter a niche keyword — discovery starts from a search term (e.g. horror stories, space facts, quiz)." }, { status: 400 });
+    if (!filters.keyword) return NextResponse.json({ error: "Enter a niche keyword — or paste a reference channel and I'll derive the niche from its recent videos." }, { status: 400 });
     if (filters.keyword.length > 100) return NextResponse.json({ error: "Keyword is too long." }, { status: 400 });
 
     const queryKey = finderKey(filters);
@@ -58,7 +71,7 @@ export async function POST(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(1);
     if (cached && cached.length) {
-      return NextResponse.json({ id: cached[0].id, results: cached[0].results, cached: true });
+      return NextResponse.json({ id: cached[0].id, results: cached[0].results, cached: true, reference });
     }
 
     // Daily cap on fresh searches (protects the shared 10,000-unit daily quota).
@@ -76,14 +89,15 @@ export async function POST(req: NextRequest) {
     const { videos, channels } = await searchViralVideos(filters);
     const results = applyFilters(videos, channels, filters);
 
+    const savedFilters = reference ? { ...filters, referenceTitle: reference.title, referenceUrl: reference.url, seedKeywords: reference.keywords } : filters;
     const { data: row, error: insErr } = await sb
       .from("finder_searches")
-      .insert({ user_id: userId, query_key: queryKey, filters, results })
+      .insert({ user_id: userId, query_key: queryKey, filters: savedFilters, results })
       .select("id")
       .single();
     if (insErr) return NextResponse.json({ error: `Search ran but could not be saved: ${insErr.message}` }, { status: 500 });
 
-    return NextResponse.json({ id: row.id, results, cached: false });
+    return NextResponse.json({ id: row.id, results, cached: false, reference });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Finder search failed." }, { status: 500 });
   }
