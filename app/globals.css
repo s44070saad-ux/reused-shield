@@ -68,10 +68,10 @@ p.lede { font-size: 1.09rem; color: #47617a; max-width: 640px; }
   padding: 6px 13px; border-radius: 99px;
 }
 .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #2dd4bf; box-shadow: 0 0 0 4px rgba(45, 212, 191, .25); }
-.btn-white { background: #fff; color: #142D4C; box-shadow: 0 8px 20px rgba(0, 0, 0, .25); }
-.btn-white:hover { filter: brightness(.96); }
-.btn-outline-w { background: transparent; border: 1.5px solid rgba(255, 255, 255, .55); color: #fff; box-shadow: none; }
-.btn-outline-w:hover { background: rgba(255, 255, 255, .12); filter: none; }
+.hero .btn-white { background: #fff; color: #142D4C; box-shadow: 0 8px 20px rgba(0, 0, 0, .25); }
+.hero .btn-white:hover { filter: brightness(.96); }
+.hero .btn-outline-w { background: transparent; border: 1.5px solid rgba(255, 255, 255, .55); color: #fff; box-shadow: none; }
+.hero .btn-outline-w:hover { background: rgba(255, 255, 255, .12); filter: none; }
 .hero-stats { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 24px; }
 .hero-stats div b { display: block; font-family: "Poppins", sans-serif; font-size: 1.25rem; color: #fff; line-height: 1.15; }
 .hero-stats div span { font-size: .8rem; color: #9db8d2; }
