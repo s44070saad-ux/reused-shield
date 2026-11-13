@@ -32,16 +32,16 @@ const STOP = new Set(["the","a","an","of","to","in","on","for","and","or","vs","
 export function normalizeTitle(t: string): string {
   return t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
 }
-function tokens(t: string): string[] {
+export function titleTokens(t: string): string[] {
   return normalizeTitle(t).split(" ").filter((w) => w && !STOP.has(w));
 }
-function jaccard(a: Set<string>, b: Set<string>): number {
+export function jaccard(a: Set<string>, b: Set<string>): number {
   if (!a.size || !b.size) return 0;
   let inter = 0;
   a.forEach((x) => { if (b.has(x)) inter++; });
   return inter / (a.size + b.size - inter);
 }
-function hammingHex(a: string, b: string): number {
+export function hammingHex(a: string, b: string): number {
   let d = 0;
   for (let i = 0; i < Math.min(a.length, b.length); i++) {
     let x = parseInt(a[i], 16) ^ parseInt(b[i], 16);
@@ -63,7 +63,7 @@ export function runAudit(videos: RawVideo[]): EngineResult {
   };
 
   // (a) Title template repetition
-  const toks = videos.map((v) => new Set(tokens(v.title)));
+  const toks = videos.map((v) => new Set(titleTokens(v.title)));
   let similarPairs = 0, totalPairs = 0;
   const templatedIdx = new Set<number>();
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {

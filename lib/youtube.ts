@@ -67,12 +67,9 @@ function parseDuration(iso: string): number {
   return Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0);
 }
 
-/** 64-bit average hash (aHash) of a thumbnail image, as 16 hex chars. */
-export async function thumbnailHash(url: string): Promise<string | null> {
+/** 64-bit average hash (aHash) of an image buffer, as 16 hex chars. */
+export async function hashImageBuffer(buf: Buffer): Promise<string | null> {
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
     const { data } = await sharp(buf).resize(8, 8, { fit: "fill" }).grayscale().raw().toBuffer({ resolveWithObject: true });
     let avg = 0;
     for (let i = 0; i < data.length; i++) avg += data[i];
@@ -84,6 +81,17 @@ export async function thumbnailHash(url: string): Promise<string | null> {
       hex += parseInt(bits.slice(i, i + 4).join(""), 2).toString(16);
     }
     return hex.padStart(16, "0");
+  } catch {
+    return null;
+  }
+}
+
+/** aHash of a remote thumbnail image. */
+export async function thumbnailHash(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return hashImageBuffer(Buffer.from(await res.arrayBuffer()));
   } catch {
     return null;
   }
