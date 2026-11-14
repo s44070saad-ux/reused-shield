@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { PRODUCT_NAME, HONESTY_NOTE } from "@/lib/config";
+import { PRODUCT_NAME, HONESTY_NOTE, PLANS } from "@/lib/config";
 
 const I = (paths: React.ReactNode) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths}</svg>
@@ -59,7 +59,7 @@ export default function Home() {
       <section className="hero">
         <div className="hero-grid">
           <div>
-            <span className="badge">FREE BETA · NO CARD REQUIRED</span>
+            <span className="badge">DAILY MONITORING · EMAIL ALERTS · START FREE</span>
             <h1>Find out your reused-content risk <span className="hl">before</span> YouTube tells you.</h1>
             <p className="lede">
               Since YouTube's July 2025 clarification of the reused-content policy — enforced as "inauthentic,
@@ -68,7 +68,7 @@ export default function Home() {
               signals, shows you exactly what looks templated, and helps you build the evidence trail an appeal needs.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
-              <Link className="btn btn-white" href="/dashboard">Audit my channel — free beta</Link>
+              <Link className="btn btn-white" href="/dashboard">Audit my channel — free</Link>
               <a className="btn btn-outline-w" href="#sample">See a sample report</a>
             </div>
             <div className="hero-stats">
@@ -169,10 +169,37 @@ export default function Home() {
 
       <div className="honesty"><b>Straight talk:</b> {HONESTY_NOTE} Anyone who promises you guaranteed monetization approval is selling you something.</div>
 
-      <h2>Join the early-access list</h2>
+      <h2 id="pricing">Pricing</h2>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Every plan includes the full audit engine, Pre-Publish Check, the Finder, Breakdowns, the Provenance Vault and the Appeal Pack.
+        Plans differ in <b>credits</b> (1 audit = 1 credit · Pre-Publish = 1 · Breakdown = 2 · Finder search = 3, cached repeats free)
+        and in <b>monitoring</b> — paid plans re-audit your watched channels every day and email you when risk moves.
+      </p>
+      <div className="grid">
+        {PLANS.map((p) => (
+          <div className="card feature" key={p.id} style={{ marginTop: 0, ...(p.id === "pro" ? { borderColor: "#18A999", borderWidth: 2 } : {}) }}>
+            {p.id === "pro" && <span className="chip" style={{ background: "#18A999", color: "#fff", borderColor: "#18A999" }}>MOST POPULAR</span>}
+            <h3 style={{ margin: "6px 0 0" }}>{p.name}</h3>
+            <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.7rem", color: "#142D4C" }}>${p.price}</b><span className="muted"> /month</span></p>
+            <p className="muted" style={{ marginTop: 0 }}>{p.tagline}</p>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {p.features.map((f) => <li key={f} style={{ marginBottom: 6 }}>{f}</li>)}
+            </ul>
+            <Link className={`btn btn-sm ${p.id === "pro" ? "" : "btn-ghost"}`} href="/login" style={{ marginTop: 10 }}>
+              {p.id === "free" ? "Start free" : `Get ${p.name}`}
+            </Link>
+          </div>
+        ))}
+      </div>
+      <p className="muted" style={{ fontSize: ".92rem" }}>
+        Credits reset on the 1st of each month. Watched-channel auto-checks never burn credits.
+        To upgrade today: create your free account, then contact us — paid plans are activated on your account within a day while self-serve checkout is being finished.
+      </p>
+
+      <h2>Prefer a guided start?</h2>
       <div className="card">
         {state === "done" ? (
-          <p className="ok" style={{ margin: 0 }}>You're on the list. We'll email you when your audit slot opens.</p>
+          <p className="ok" style={{ margin: 0 }}>Request received. We'll email you within a day to set up your first audit and watchlist.</p>
         ) : (
           <form onSubmit={joinWaitlist}>
             <div className="field">
@@ -194,8 +221,8 @@ export default function Home() {
               </select>
             </div>
             {state === "error" && <p className="err">{msg}</p>}
-            {!isSupabaseConfigured && <p className="muted">Waitlist opening shortly.</p>}
-            <button className="btn" type="submit" disabled={state === "saving"}>{state === "saving" ? "Joining…" : "Join the waitlist"}</button>
+            {!isSupabaseConfigured && <p className="muted">Requests opening shortly.</p>}
+            <button className="btn" type="submit" disabled={state === "saving"}>{state === "saving" ? "Sending…" : "Request guided setup"}</button>
           </form>
         )}
       </div>
@@ -204,7 +231,7 @@ export default function Home() {
         Already rejected? The appeal clock matters more than the audit: sign in, add your rejection date to the
         deadline tracker, and build your Appeal Pack from your provenance entries.
       </p>
-      <p className="footer-note">{PRODUCT_NAME} — a risk estimate from public signals. Only YouTube decides monetization. Free beta, no payments yet.</p>
+      <p className="footer-note">{PRODUCT_NAME} — a risk estimate from public signals. Only YouTube decides monetization.</p>
     </main>
   );
 }
