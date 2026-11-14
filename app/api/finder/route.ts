@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { searchViralVideos, getReferenceSeed } from "@/lib/youtube";
 import { applyFilters, finderKey, type FinderFilters } from "@/lib/finder";
+import { checkCredits, chargeCredits, outOfCreditsMessage } from "@/lib/credits";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const DAILY_FRESH_LIMIT = 5; // per user per day — search.list costs ~100 units/page
 const CACHE_HOURS = 24;
 
 function num(v: any): number | undefined {
@@ -74,7 +74,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: cached[0].id, results: cached[0].results, cached: true, reference });
     }
 
-    // Daily cap on fresh searches (protects the shared 10,000-unit daily quota).
+    // Credits: a fresh search costs 3 (cached repeats are free, handled above).
+    const creditCheck = await checkCredits(sb, userId, "finder");
+    if (!creditCheck.ok) return NextResponse.json({ error: outOfCreditsMessage(creditCheck, "finder") }, { status: 402 });
+
+    // Daily cap on fresh searches per plan (protects the shared 10,000-unit daily quota).
+    const dailyLimit = creditCheck.plan.finderDaily;
     const dayStart = new Date();
     dayStart.setUTCHours(0, 0, 0, 0);
     const { count } = await sb
@@ -82,8 +87,8 @@ export async function POST(req: NextRequest) {
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .gte("created_at", dayStart.toISOString());
-    if ((count ?? 0) >= DAILY_FRESH_LIMIT) {
-      return NextResponse.json({ error: `Daily Finder limit reached (${DAILY_FRESH_LIMIT} fresh searches/day in the free beta — YouTube search quota is shared by all users). Your earlier searches today are still in your history below, and identical repeats are free.` }, { status: 429 });
+    if ((count ?? 0) >= dailyLimit) {
+      return NextResponse.json({ error: `Daily Finder limit reached (${dailyLimit} fresh searches/day on the ${creditCheck.plan.name} plan — YouTube search quota is shared by all users). Your earlier searches today are still in your history below, and identical repeats are free.` }, { status: 429 });
     }
 
     const { videos, channels } = await searchViralVideos(filters);
@@ -97,6 +102,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (insErr) return NextResponse.json({ error: `Search ran but could not be saved: ${insErr.message}` }, { status: 500 });
 
+    await chargeCredits(sb, userId, "finder");
     return NextResponse.json({ id: row.id, results, cached: false, reference });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Finder search failed." }, { status: 500 });
