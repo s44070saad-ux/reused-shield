@@ -74,7 +74,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: cached[0].id, results: cached[0].results, cached: true, reference });
     }
 
-    // Credits: a fresh search costs 3 (cached repeats are free, handled above).
+    // Global cache: if ANY user ran the identical search in the last 24h, the
+    // results (public YouTube data) are reused — 0 quota, 0 credits. This is
+    // the single biggest saver on the shared daily quota. Read via service
+    // role because RLS only lets users see their own searches.
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceKey) {
+      const svc = createClient(url, serviceKey);
+      const { data: globalCached } = await svc
+        .from("finder_searches")
+        .select("id, results")
+        .eq("query_key", queryKey)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (globalCached && globalCached.length) {
+        return NextResponse.json({ id: globalCached[0].id, results: globalCached[0].results, cached: true, reference });
+      }
+    }
+
+    // Credits: a fresh search costs CREDIT_COSTS.finder (cached repeats are free, handled above).
     const creditCheck = await checkCredits(sb, userId, "finder");
     if (!creditCheck.ok) return NextResponse.json({ error: outOfCreditsMessage(creditCheck, "finder") }, { status: 402 });
 
