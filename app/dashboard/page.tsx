@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { supabase, type Audit, type Deadline, deadlineDates, daysLeft } from "@/lib/supabaseClient";
+import { supabase, type Audit, type Deadline, type WatchItem, type AlertItem, deadlineDates, daysLeft } from "@/lib/supabaseClient";
 import { SELF_CHECK_QUESTIONS } from "@/lib/selfCheck";
 import { groupByChannel } from "@/lib/auditDiff";
 import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS } from "@/lib/config";
@@ -14,6 +14,10 @@ export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [audits, setAudits] = useState<Audit[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchItem[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [watchInput, setWatchInput] = useState("");
+  const [checkingId, setCheckingId] = useState("");
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [channel, setChannel] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -24,12 +28,16 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     if (!supabase) return;
-    const [a, d] = await Promise.all([
+    const [a, d, w, al] = await Promise.all([
       supabase.from("audits").select("*").order("created_at", { ascending: false }),
       supabase.from("deadlines").select("*").order("rejection_date", { ascending: false }),
+      supabase.from("watchlist").select("*").order("created_at", { ascending: false }),
+      supabase.from("alerts").select("*").order("created_at", { ascending: false }).limit(10),
     ]);
     if (a.data) setAudits(a.data as Audit[]);
     if (d.data) setDeadlines(d.data as Deadline[]);
+    if (w.data) setWatchlist(w.data as WatchItem[]);
+    if (al.data) setAlerts(al.data as AlertItem[]);
   }, []);
 
   useEffect(() => {
@@ -61,6 +69,71 @@ export default function Dashboard() {
       setErr(e2.message ?? "Audit failed.");
       setRunning(false);
     }
+  }
+
+  const watchedIds = new Set(watchlist.map((w) => w.channel_id));
+
+  async function insertWatch(a: Audit) {
+    if (!supabase || !session || !a.channel_id) return;
+    if (watchedIds.has(a.channel_id)) { setErr("That channel is already on your watchlist."); return; }
+    if (watchlist.length >= 10) { setErr("Watchlist is limited to 10 channels during the free beta."); return; }
+    const { error } = await supabase.from("watchlist").insert({
+      user_id: session.user.id, channel_id: a.channel_id, channel_title: a.channel_title,
+      channel_url: a.channel_url, last_score: a.score, last_level: a.level, last_checked_at: a.created_at,
+    });
+    if (error) { setErr(error.message); return; }
+    load();
+  }
+
+  async function addToWatch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session || !watchInput.trim()) return;
+    setErr("");
+    try {
+      const res = await fetch("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ channel_input: watchInput.trim(), self_check: null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not audit that channel.");
+      if (!supabase) return;
+      const { data: row } = await supabase.from("audits").select("*").eq("id", data.id).single();
+      if (row) { await insertWatch(row as Audit); setWatchInput(""); }
+      load();
+    } catch (e2: any) {
+      setErr(e2.message ?? "Could not add that channel.");
+    }
+  }
+
+  async function checkNow(w: WatchItem) {
+    if (!session) return;
+    setCheckingId(w.id); setErr("");
+    try {
+      const res = await fetch("/api/watchlist/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ id: w.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Check failed.");
+      await load();
+    } catch (e2: any) {
+      setErr(e2.message ?? "Check failed.");
+    }
+    setCheckingId("");
+  }
+
+  async function removeWatch(id: string) {
+    if (!supabase) return;
+    await supabase.from("watchlist").delete().eq("id", id);
+    load();
+  }
+
+  async function markAlertsRead() {
+    if (!supabase) return;
+    await supabase.from("alerts").update({ read: true }).eq("read", false);
+    load();
   }
 
   async function addDeadline(e: React.FormEvent) {
@@ -108,6 +181,24 @@ export default function Dashboard() {
         <h1>Your channels</h1>
         <p>Every audit you've run, your rejection clocks, and your provenance evidence — in one place.</p>
       </section>
+
+      {alerts.some((a) => !a.read) && (
+        <div className="card" style={{ borderColor: "#f59e0b", background: "#fffbeb" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <h3 style={{ margin: 0 }}>🔔 Monitoring alerts</h3>
+            <button className="btn btn-ghost btn-sm" onClick={markAlertsRead}>Mark all read</button>
+          </div>
+          <ul style={{ margin: "10px 0 0", paddingLeft: 20 }}>
+            {alerts.filter((a) => !a.read).map((a) => (
+              <li key={a.id} style={{ marginBottom: 6 }}>
+                {a.message}{" "}
+                {a.audit_id && <Link href={`/audit/${a.audit_id}`}>View report</Link>}
+                <span className="muted"> · {new Date(a.created_at).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="card">
         <h3>Run a new audit</h3>
@@ -170,6 +261,48 @@ export default function Dashboard() {
         );
       })()}
 
+      <h2>Watchlist — monitored channels</h2>
+      <div className="card" style={{ marginTop: 0 }}>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Watched channels are re-audited automatically every day. If a risk score jumps (or drops a lot after fixes),
+          an alert appears here. Free beta limit: 10 channels. Email alerts arrive with paid plans.
+        </p>
+        <form onSubmit={addToWatch} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <input type="text" placeholder="Channel URL, @handle or ID — runs a first audit, then watches it"
+            value={watchInput} onChange={(e) => setWatchInput(e.target.value)} style={{ flex: "1 1 260px" }} />
+          <button className="btn" type="submit" disabled={!watchInput.trim()}>Add to watchlist</button>
+        </form>
+      </div>
+      {watchlist.length > 0 && (
+        <div className="grid">
+          {watchlist.map((w) => {
+            const latest = audits.find((a) => a.channel_id === w.channel_id);
+            return (
+              <div className="card" key={w.id} style={{ marginTop: 0 }}>
+                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                  {w.last_score != null && (
+                    <span className={`score-ring sm level-${w.last_level ?? "Low"}`} style={{ "--p": w.last_score } as React.CSSProperties}><b>{w.last_score}</b></span>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b>{w.channel_title ?? w.channel_id}</b><br />
+                    <span className="muted" style={{ fontSize: ".88rem" }}>
+                      {w.last_level ?? ""} risk · last checked {w.last_checked_at ? new Date(w.last_checked_at).toLocaleDateString() : "never"}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                  <button className="btn btn-sm" disabled={checkingId === w.id} onClick={() => checkNow(w)}>
+                    {checkingId === w.id ? "Checking…" : "Check now"}
+                  </button>
+                  {latest && <Link className="btn btn-ghost btn-sm" href={`/audit/${latest.id}`}>Latest report</Link>}
+                  <button className="btn btn-danger btn-sm" onClick={() => removeWatch(w.id)}>Remove</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <h2>Past audits</h2>
       {audits.length === 0 ? (
         <p className="muted">No audits yet. Your first one takes under a minute.</p>
@@ -188,6 +321,9 @@ export default function Dashboard() {
                   <span className={`score-ring sm level-${a.level}`} style={{ "--p": a.score } as React.CSSProperties}>
                     <b>{a.score}</b>
                   </span>
+                  {a.channel_id && !watchedIds.has(a.channel_id) && (
+                    <button className="btn btn-ghost btn-sm" onClick={() => insertWatch(a)}>Watch</button>
+                  )}
                   <button className="btn btn-ghost btn-sm" onClick={() => { setChannel(a.channel_input || a.channel_url || ""); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Re-audit</button>
                   <Link className="btn btn-sm" href={`/audit/${a.id}`}>Open report</Link>
                 </div>
