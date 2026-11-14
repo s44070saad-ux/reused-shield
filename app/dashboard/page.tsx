@@ -265,7 +265,7 @@ export default function Dashboard() {
       <div className="card" style={{ marginTop: 0 }}>
         <p className="muted" style={{ marginTop: 0 }}>
           Watched channels are re-audited automatically every day. If a risk score jumps (or drops a lot after fixes),
-          an alert appears here. Free beta limit: 10 channels. Email alerts arrive with paid plans.
+          an alert appears here and is emailed to your account email. Free beta limit: 10 channels.
         </p>
         <form onSubmit={addToWatch} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input type="text" placeholder="Channel URL, @handle or ID — runs a first audit, then watches it"
