@@ -5,6 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getChannel, getRecentVideos } from "./youtube";
 import { runAudit } from "./auditEngine";
+import { sendAlertEmail } from "./email";
 
 export interface WatchRow {
   id: string;
@@ -34,7 +35,7 @@ export function alertFor(prevScore: number | null, prevLevel: string | null, new
   return null;
 }
 
-export async function checkWatchedChannel(sb: SupabaseClient, w: WatchRow): Promise<{ score: number; level: string; alert: string | null; auditId: string }> {
+export async function checkWatchedChannel(sb: SupabaseClient, w: WatchRow, notifyEmail?: string): Promise<{ score: number; level: string; alert: string | null; auditId: string; emailed: boolean }> {
   const input = w.channel_url ?? w.channel_id;
   const channel = await getChannel(input);
   const raw = await getRecentVideos(channel.uploadsPlaylist, 30);
@@ -64,6 +65,7 @@ export async function checkWatchedChannel(sb: SupabaseClient, w: WatchRow): Prom
   if (error) throw new Error(`Audit save failed: ${error.message}`);
 
   const alert = alertFor(w.last_score, w.last_level, result.score, result.level, channel.title);
+  let emailed = false;
   if (alert) {
     await sb.from("alerts").insert({
       user_id: w.user_id,
@@ -74,6 +76,14 @@ export async function checkWatchedChannel(sb: SupabaseClient, w: WatchRow): Prom
       new_score: result.score,
       audit_id: row.id,
     });
+    if (notifyEmail) {
+      const bad = alert.startsWith("Risk went UP");
+      emailed = await sendAlertEmail(
+        notifyEmail,
+        bad ? `⚠️ Risk alert: ${channel.title} is now ${result.score}/100` : `✅ Risk dropped: ${channel.title} is now ${result.score}/100`,
+        `${alert}\n\nOpen the report: https://reusedshield.vercel.app/audit/${row.id}\n\n— Reused Content Shield monitoring`,
+      );
+    }
   }
   await sb.from("watchlist").update({
     channel_title: channel.title,
@@ -83,5 +93,5 @@ export async function checkWatchedChannel(sb: SupabaseClient, w: WatchRow): Prom
     last_checked_at: new Date().toISOString(),
   }).eq("id", w.id);
 
-  return { score: result.score, level: result.level, alert, auditId: row.id };
+  return { score: result.score, level: result.level, alert, auditId: row.id, emailed };
 }
