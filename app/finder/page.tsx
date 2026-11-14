@@ -103,7 +103,7 @@ export default function FinderPage() {
         <h1>Viral Content Finder</h1>
         <p>
           Find channels with breakout videos in a niche — then audit the risk before you copy the format.
-          Search by keyword, or seed from a reference channel. Free beta: 5 fresh searches a day
+          Search by keyword, or seed from a reference channel. A fresh search costs 3 credits
           (identical repeats within 24 hours are free — results are cached).
         </p>
       </section>
