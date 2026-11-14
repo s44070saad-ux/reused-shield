@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const { data: w, error: wErr } = await sb.from("watchlist").select("*").eq("id", id).single();
     if (wErr || !w) return NextResponse.json({ error: "Watch entry not found." }, { status: 404 });
 
-    const result = await checkWatchedChannel(sb, w as WatchRow);
+    const result = await checkWatchedChannel(sb, w as WatchRow, userData.user.email ?? undefined);
     return NextResponse.json(result);
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Check failed. Try again." }, { status: 500 });
