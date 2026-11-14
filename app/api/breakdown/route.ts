@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getChannel, getBreakdownVideos } from "@/lib/youtube";
 import { buildBreakdown } from "@/lib/breakdown";
+import { checkCredits, chargeCredits, outOfCreditsMessage } from "@/lib/credits";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest) {
     const sb = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } } });
     const { data: userData, error: userErr } = await sb.auth.getUser(token);
     if (userErr || !userData.user) return NextResponse.json({ error: "Your session expired. Sign in again." }, { status: 401 });
+
+    const creditCheck = await checkCredits(sb, userData.user.id, "breakdown");
+    if (!creditCheck.ok) return NextResponse.json({ error: outOfCreditsMessage(creditCheck, "breakdown") }, { status: 402 });
 
     const body = await req.json();
     const input = String(body.channel ?? "").trim();
@@ -40,6 +44,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (insErr) return NextResponse.json({ error: `Breakdown built but could not be saved: ${insErr.message}` }, { status: 500 });
 
+    await chargeCredits(sb, userData.user.id, "breakdown");
     return NextResponse.json({ id: row.id, plan });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "The breakdown failed. Try again." }, { status: 500 });
