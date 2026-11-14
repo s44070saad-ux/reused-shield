@@ -1,13 +1,25 @@
 // Server-side credit accounting. Plans live in profiles.plan; usage is an
 // append-only ledger (usage_events) summed per calendar month. Routes check
 // BEFORE doing the expensive work and charge AFTER it succeeds — a failed
-// audit never costs the user a credit.
+// audit never costs the user a credit. New accounts also get SIGNUP_BONUS
+// credits on top of their plan during their first SIGNUP_BONUS_DAYS days.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { planById, CREDIT_COSTS, type PlanDef, type CreditAction } from "./config";
+import { planById, CREDIT_COSTS, SIGNUP_BONUS_CREDITS, SIGNUP_BONUS_DAYS, type PlanDef, type CreditAction } from "./config";
+
+export interface PlanInfo { plan: PlanDef; bonusActive: boolean; allowance: number }
+
+export async function getPlanInfo(sb: SupabaseClient, userId: string): Promise<PlanInfo> {
+  const { data } = await sb.from("profiles").select("plan, created_at").eq("user_id", userId).single();
+  const plan = planById(data?.plan);
+  // No profile row yet = brand-new account (bonus applies). Otherwise the
+  // bonus lasts SIGNUP_BONUS_DAYS from the profile's creation.
+  const createdAt = data?.created_at ? new Date(data.created_at).getTime() : null;
+  const bonusActive = createdAt == null || Date.now() - createdAt < SIGNUP_BONUS_DAYS * 86400000;
+  return { plan, bonusActive, allowance: plan.monthlyCredits + (bonusActive ? SIGNUP_BONUS_CREDITS : 0) };
+}
 
 export async function getUserPlan(sb: SupabaseClient, userId: string): Promise<PlanDef> {
-  const { data } = await sb.from("profiles").select("plan").eq("user_id", userId).single();
-  return planById(data?.plan);
+  return (await getPlanInfo(sb, userId)).plan;
 }
 
 export function monthStartISO(now = new Date()): string {
@@ -23,20 +35,27 @@ export async function creditsUsedThisMonth(sb: SupabaseClient, userId: string): 
   return (data ?? []).reduce((sum, r: any) => sum + (r.cost ?? 0), 0);
 }
 
-export interface CreditCheck { ok: boolean; plan: PlanDef; used: number; cost: number; remaining: number }
+export interface CreditCheck { ok: boolean; plan: PlanDef; used: number; cost: number; remaining: number; allowance: number; bonusActive: boolean }
 
 export async function checkCredits(sb: SupabaseClient, userId: string, action: CreditAction): Promise<CreditCheck> {
-  const plan = await getUserPlan(sb, userId);
+  const info = await getPlanInfo(sb, userId);
   const used = await creditsUsedThisMonth(sb, userId);
   const cost = CREDIT_COSTS[action];
-  const remaining = plan.monthlyCredits - used;
-  return { ok: remaining >= cost, plan, used, cost, remaining };
+  const remaining = info.allowance - used;
+  return { ok: remaining >= cost, plan: info.plan, used, cost, remaining, allowance: info.allowance, bonusActive: info.bonusActive };
 }
 
 export async function chargeCredits(sb: SupabaseClient, userId: string, action: CreditAction): Promise<void> {
   await sb.from("usage_events").insert({ user_id: userId, action, cost: CREDIT_COSTS[action] });
 }
 
+const ACTION_LABEL: Record<CreditAction, string> = {
+  audit: "an audit",
+  prepublish: "a Pre-Publish Check",
+  breakdown: "a Breakdown",
+  finder: "a Finder search",
+};
+
 export function outOfCreditsMessage(check: CreditCheck, action: CreditAction): string {
-  return `You're out of credits on the ${check.plan.name} plan (${check.used}/${check.plan.monthlyCredits} used this month; a ${action} costs ${check.cost}). Credits reset on the 1st — or upgrade your plan for more.`;
+  return `You're out of credits on the ${check.plan.name} plan (${check.used}/${check.allowance} used this month; ${ACTION_LABEL[action]} costs ${check.cost}). Credits reset on the 1st — or upgrade your plan for more.`;
 }
