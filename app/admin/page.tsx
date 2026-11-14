@@ -122,8 +122,8 @@ export default function AdminPage() {
                     <td>
                       <select value={u.plan} onChange={(e) => setPlan(u.id, e.target.value)} aria-label={`Plan for ${u.email}`}>
                         <option value="free">Free</option>
-                        <option value="solo">Solo $19</option>
-                        <option value="pro">Pro $49</option>
+                        <option value="solo">Solo $29</option>
+                        <option value="pro">Pro $67</option>
                         <option value="agency">Agency $99</option>
                       </select>
                     </td>
