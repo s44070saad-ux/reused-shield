@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, fmtNum, type FinderSearch } from "@/lib/supabaseClient";
-import { PRODUCT_NAME } from "@/lib/config";
+import { PRODUCT_NAME, CREDIT_COSTS } from "@/lib/config";
 import type { Session } from "@supabase/supabase-js";
 import type { FinderChannel } from "@/lib/finder";
 
@@ -103,7 +103,7 @@ export default function FinderPage() {
         <h1>Viral Content Finder</h1>
         <p>
           Find channels with breakout videos in a niche — then audit the risk before you copy the format.
-          Search by keyword, or seed from a reference channel. A fresh search costs 3 credits
+          Search by keyword, or seed from a reference channel. A fresh search costs {CREDIT_COSTS.finder} credits
           (identical repeats within 24 hours are free — results are cached).
         </p>
       </section>
