@@ -1,8 +1,8 @@
 // Email alerts via Resend (https://resend.com). No SDK — plain fetch.
 // Requires RESEND_API_KEY in the server environment. Without a verified
 // domain, Resend's shared sender (onboarding@resend.dev) can only deliver
-// to the Resend account owner's own email address — fine for the owner's
-// alerts during beta; set RESEND_FROM to a verified domain sender later.
+// to the Resend account owner's own email address — fine for the owner's own
+// alerts; set RESEND_FROM to a verified domain sender to email all users.
 
 export async function sendAlertEmail(to: string, subject: string, text: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
