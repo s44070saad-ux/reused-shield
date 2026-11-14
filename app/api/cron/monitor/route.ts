@@ -31,15 +31,22 @@ export async function GET(req: NextRequest) {
 
   let checked = 0;
   let alerts = 0;
+  let emailed = 0;
   const failures: string[] = [];
+  const emailByUser = new Map<string, string | undefined>();
   for (const w of (data ?? []) as WatchRow[]) {
     try {
-      const r = await checkWatchedChannel(sb, w);
+      if (!emailByUser.has(w.user_id)) {
+        const { data: u } = await sb.auth.admin.getUserById(w.user_id);
+        emailByUser.set(w.user_id, u.user?.email ?? undefined);
+      }
+      const r = await checkWatchedChannel(sb, w, emailByUser.get(w.user_id));
       checked++;
       if (r.alert) alerts++;
+      if (r.emailed) emailed++;
     } catch (e: any) {
       failures.push(`${w.channel_title ?? w.channel_id}: ${e?.message ?? "failed"}`);
     }
   }
-  return NextResponse.json({ checked, alerts, failures });
+  return NextResponse.json({ checked, alerts, emailed, failures });
 }
