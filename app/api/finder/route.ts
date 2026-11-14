@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     }
     const filters: FinderFilters = {
       keyword: String(body.keyword ?? "").trim() || reference?.keywords || "",
+      language: /^[a-z]{2}$/.test(String(body.language ?? "")) ? String(body.language) : undefined,
       referenceChannel: referenceChannelId,
       dateFrom: body.dateFrom || undefined,
       dateTo: body.dateTo || undefined,
