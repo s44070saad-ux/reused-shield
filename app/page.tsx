@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { PRODUCT_NAME, HONESTY_NOTE, PLANS } from "@/lib/config";
+import { PRODUCT_NAME, HONESTY_NOTE, PLANS, CREDIT_COSTS, SIGNUP_BONUS_CREDITS } from "@/lib/config";
 
 const I = (paths: React.ReactNode) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths}</svg>
@@ -172,8 +172,9 @@ export default function Home() {
       <h2 id="pricing">Pricing</h2>
       <p className="muted" style={{ marginTop: 0 }}>
         Every plan includes the full audit engine, Pre-Publish Check, the Finder, Breakdowns, the Provenance Vault and the Appeal Pack.
-        Plans differ in <b>credits</b> (1 audit = 1 credit · Pre-Publish = 1 · Breakdown = 2 · Finder search = 3, cached repeats free)
+        Plans differ in <b>credits</b> (audit = {CREDIT_COSTS.audit} · Pre-Publish = {CREDIT_COSTS.prepublish} · Breakdown = {CREDIT_COSTS.breakdown} · Finder search = {CREDIT_COSTS.finder}, cached repeats free)
         and in <b>monitoring</b> — paid plans re-audit your watched channels every day and email you when risk moves.
+        Every new account also starts with <b>+{SIGNUP_BONUS_CREDITS} bonus credits</b> for its first 30 days.
       </p>
       <div className="grid">
         {PLANS.map((p) => (
