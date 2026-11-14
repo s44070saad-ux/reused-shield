@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase, type Audit, type Deadline, type WatchItem, type AlertItem, deadlineDates, daysLeft } from "@/lib/supabaseClient";
 import { SELF_CHECK_QUESTIONS } from "@/lib/selfCheck";
 import { groupByChannel } from "@/lib/auditDiff";
-import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS } from "@/lib/config";
+import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS, planById } from "@/lib/config";
 import type { Session } from "@supabase/supabase-js";
 
 export default function Dashboard() {
@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [audits, setAudits] = useState<Audit[]>([]);
   const [watchlist, setWatchlist] = useState<WatchItem[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [planId, setPlanId] = useState("free");
+  const [creditsUsed, setCreditsUsed] = useState(0);
   const [watchInput, setWatchInput] = useState("");
   const [checkingId, setCheckingId] = useState("");
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
@@ -38,6 +40,15 @@ export default function Dashboard() {
     if (d.data) setDeadlines(d.data as Deadline[]);
     if (w.data) setWatchlist(w.data as WatchItem[]);
     if (al.data) setAlerts(al.data as AlertItem[]);
+    const prof = await supabase.from("profiles").select("plan").maybeSingle();
+    if (prof.data) setPlanId(prof.data.plan ?? "free");
+    else {
+      const u = await supabase.auth.getUser();
+      if (u.data.user) await supabase.from("profiles").insert({ user_id: u.data.user.id, plan: "free" });
+    }
+    const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    const usage = await supabase.from("usage_events").select("cost").gte("created_at", monthStart);
+    if (usage.data) setCreditsUsed(usage.data.reduce((s: number, r: any) => s + (r.cost ?? 0), 0));
   }, []);
 
   useEffect(() => {
@@ -76,7 +87,9 @@ export default function Dashboard() {
   async function insertWatch(a: Audit) {
     if (!supabase || !session || !a.channel_id) return;
     if (watchedIds.has(a.channel_id)) { setErr("That channel is already on your watchlist."); return; }
-    if (watchlist.length >= 10) { setErr("Watchlist is limited to 10 channels during the free beta."); return; }
+    const myPlan = planById(planId);
+    if (myPlan.watchLimit === 0) { setErr("Channel monitoring is a paid feature — upgrade to Solo, Pro or Agency to watch channels."); return; }
+    if (watchlist.length >= myPlan.watchLimit) { setErr(`Your ${myPlan.name} plan watches up to ${myPlan.watchLimit} channels. Remove one or upgrade.`); return; }
     const { error } = await supabase.from("watchlist").insert({
       user_id: session.user.id, channel_id: a.channel_id, channel_title: a.channel_title,
       channel_url: a.channel_url, last_score: a.score, last_level: a.level, last_checked_at: a.created_at,
@@ -88,6 +101,9 @@ export default function Dashboard() {
   async function addToWatch(e: React.FormEvent) {
     e.preventDefault();
     if (!session || !watchInput.trim()) return;
+    const myPlan = planById(planId);
+    if (myPlan.watchLimit === 0) { setErr("Channel monitoring is a paid feature — upgrade to Solo, Pro or Agency to watch channels."); return; }
+    if (watchlist.length >= myPlan.watchLimit) { setErr(`Your ${myPlan.name} plan watches up to ${myPlan.watchLimit} channels. Remove one or upgrade.`); return; }
     setErr("");
     try {
       const res = await fetch("/api/audit", {
@@ -200,6 +216,28 @@ export default function Dashboard() {
         </div>
       )}
 
+      {(() => {
+        const plan = planById(planId);
+        const left = Math.max(0, plan.monthlyCredits - creditsUsed);
+        const pct = Math.min(100, Math.round((creditsUsed / plan.monthlyCredits) * 100));
+        return (
+          <div className="card">
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <h3 style={{ margin: 0 }}>Your plan: {plan.name}{plan.price > 0 && <span className="muted" style={{ fontWeight: 400 }}> · ${plan.price}/month</span>}</h3>
+              <a className="btn btn-ghost btn-sm" href="/#pricing">See plans</a>
+            </div>
+            <div className="bar" style={{ marginTop: 12 }}><div style={{ width: `${pct}%`, background: left === 0 ? "#dc2626" : undefined }} /></div>
+            <p className="muted" style={{ margin: "8px 0 0" }}>
+              <b style={{ color: "#142D4C" }}>{left} of {plan.monthlyCredits} credits left</b> this month ({creditsUsed} used · resets on the 1st).
+              Costs: audit 1 · Pre-Publish Check 1 · Breakdown 2 · Finder search 3 (cached repeats free).
+              {plan.watchLimit > 0
+                ? <> Monitoring: {watchlist.length}/{plan.watchLimit} channels watched — auto-checks never burn credits.</>
+                : <> Monitoring is not included on Free — paid plans re-audit watched channels daily.</>}
+            </p>
+          </div>
+        );
+      })()}
+
       <div className="card">
         <h3>Run a new audit</h3>
         <p className="muted" style={{ marginTop: 0 }}>Paste a public channel URL, @handle or channel ID. The audit samples the ~30 most recent public videos and takes under a minute.</p>
@@ -265,7 +303,8 @@ export default function Dashboard() {
       <div className="card" style={{ marginTop: 0 }}>
         <p className="muted" style={{ marginTop: 0 }}>
           Watched channels are re-audited automatically every day. If a risk score jumps (or drops a lot after fixes),
-          an alert appears here and is emailed to your account email. Free beta limit: 10 channels.
+          an alert appears here and is emailed to your account email. Your plan watches up to {planById(planId).watchLimit} channels
+          {planById(planId).watchLimit === 0 && <> — monitoring starts on the Solo plan</>}.
         </p>
         <form onSubmit={addToWatch} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input type="text" placeholder="Channel URL, @handle or ID — runs a first audit, then watches it"
