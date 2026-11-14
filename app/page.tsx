@@ -178,23 +178,28 @@ export default function Home() {
       </p>
       <div className="grid">
         {PLANS.map((p) => (
-          <div className="card feature" key={p.id} style={{ marginTop: 0, ...(p.id === "pro" ? { borderColor: "#18A999", borderWidth: 2 } : {}) }}>
+          <div className="card feature" key={p.id} style={{ marginTop: 0, ...(p.id === "pro" ? { borderColor: "#18A999", borderWidth: 2 } : {}), ...(p.unavailable ? { opacity: .6 } : {}) }}>
             {p.id === "pro" && <span className="chip" style={{ background: "#18A999", color: "#fff", borderColor: "#18A999" }}>MOST POPULAR</span>}
+            {p.unavailable && <span className="chip">UNAVAILABLE RIGHT NOW</span>}
             <h3 style={{ margin: "6px 0 0" }}>{p.name}</h3>
-            <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.7rem", color: "#142D4C" }}>${p.price}</b><span className="muted"> /month</span></p>
+            {p.unavailable
+              ? <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.25rem", color: "#142D4C" }}>Unavailable right now</b></p>
+              : <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.7rem", color: "#142D4C" }}>${p.price}</b><span className="muted"> /month</span></p>}
             <p className="muted" style={{ marginTop: 0 }}>{p.tagline}</p>
             <ul style={{ margin: 0, paddingLeft: 18 }}>
               {p.features.map((f) => <li key={f} style={{ marginBottom: 6 }}>{f}</li>)}
             </ul>
-            <Link className={`btn btn-sm ${p.id === "pro" ? "" : "btn-ghost"}`} href="/login" style={{ marginTop: 10 }}>
-              {p.id === "free" ? "Start free" : `Get ${p.name}`}
-            </Link>
+            {p.unavailable
+              ? <span className="btn btn-sm btn-ghost" aria-disabled="true" style={{ marginTop: 10, pointerEvents: "none" }}>Unavailable right now</span>
+              : <Link className={`btn btn-sm ${p.id === "pro" ? "" : "btn-ghost"}`} href="/login" style={{ marginTop: 10 }}>
+                  {p.id === "free" ? "Start free" : `Get ${p.name}`}
+                </Link>}
           </div>
         ))}
       </div>
       <p className="muted" style={{ fontSize: ".92rem" }}>
         Credits reset on the 1st of each month. Watched-channel auto-checks never burn credits.
-        To upgrade today: create your free account, then contact us — paid plans are activated on your account within a day while self-serve checkout is being finished.
+        To upgrade today: create an account, then contact us — paid plans are activated on your account within a day while self-serve checkout is being finished.
       </p>
 
       <h2>Prefer a guided start?</h2>
