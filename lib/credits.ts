@@ -6,16 +6,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { planById, CREDIT_COSTS, SIGNUP_BONUS_CREDITS, SIGNUP_BONUS_DAYS, type PlanDef, type CreditAction } from "./config";
 
-export interface PlanInfo { plan: PlanDef; bonusActive: boolean; allowance: number }
+export interface PlanInfo { plan: PlanDef; bonusActive: boolean; allowance: number; planUnavailable: boolean }
 
 export async function getPlanInfo(sb: SupabaseClient, userId: string): Promise<PlanInfo> {
   const { data } = await sb.from("profiles").select("plan, created_at").eq("user_id", userId).single();
   const plan = planById(data?.plan);
+  // A plan flagged unavailable (Free, temporarily) grants NO credits at all —
+  // not its monthly allowance and not the signup bonus — until it returns or
+  // an admin activates a paid plan on the account.
+  const planUnavailable = Boolean(plan.unavailable);
   // No profile row yet = brand-new account (bonus applies). Otherwise the
   // bonus lasts SIGNUP_BONUS_DAYS from the profile's creation.
   const createdAt = data?.created_at ? new Date(data.created_at).getTime() : null;
-  const bonusActive = createdAt == null || Date.now() - createdAt < SIGNUP_BONUS_DAYS * 86400000;
-  return { plan, bonusActive, allowance: plan.monthlyCredits + (bonusActive ? SIGNUP_BONUS_CREDITS : 0) };
+  const bonusActive = !planUnavailable && (createdAt == null || Date.now() - createdAt < SIGNUP_BONUS_DAYS * 86400000);
+  return { plan, bonusActive, planUnavailable, allowance: planUnavailable ? 0 : plan.monthlyCredits + (bonusActive ? SIGNUP_BONUS_CREDITS : 0) };
 }
 
 export async function getUserPlan(sb: SupabaseClient, userId: string): Promise<PlanDef> {
@@ -35,14 +39,14 @@ export async function creditsUsedThisMonth(sb: SupabaseClient, userId: string): 
   return (data ?? []).reduce((sum, r: any) => sum + (r.cost ?? 0), 0);
 }
 
-export interface CreditCheck { ok: boolean; plan: PlanDef; used: number; cost: number; remaining: number; allowance: number; bonusActive: boolean }
+export interface CreditCheck { ok: boolean; plan: PlanDef; used: number; cost: number; remaining: number; allowance: number; bonusActive: boolean; planUnavailable: boolean }
 
 export async function checkCredits(sb: SupabaseClient, userId: string, action: CreditAction): Promise<CreditCheck> {
   const info = await getPlanInfo(sb, userId);
   const used = await creditsUsedThisMonth(sb, userId);
   const cost = CREDIT_COSTS[action];
   const remaining = info.allowance - used;
-  return { ok: remaining >= cost, plan: info.plan, used, cost, remaining, allowance: info.allowance, bonusActive: info.bonusActive };
+  return { ok: remaining >= cost, plan: info.plan, used, cost, remaining, allowance: info.allowance, bonusActive: info.bonusActive, planUnavailable: info.planUnavailable };
 }
 
 export async function chargeCredits(sb: SupabaseClient, userId: string, action: CreditAction): Promise<void> {
@@ -57,5 +61,8 @@ const ACTION_LABEL: Record<CreditAction, string> = {
 };
 
 export function outOfCreditsMessage(check: CreditCheck, action: CreditAction): string {
+  if (check.planUnavailable) {
+    return `The ${check.plan.name} plan is unavailable right now, so no credits are active on this account. Contact us to activate a paid plan and start right away.`;
+  }
   return `You're out of credits on the ${check.plan.name} plan (${check.used}/${check.allowance} used this month; ${ACTION_LABEL[action]} costs ${check.cost}). Credits reset on the 1st — or upgrade your plan for more.`;
 }
