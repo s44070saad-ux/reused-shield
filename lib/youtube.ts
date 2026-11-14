@@ -114,6 +114,7 @@ export async function searchViralVideos(f: FinderFilters): Promise<{ videos: Fou
       part: "snippet", type: "video", order: "viewCount", maxResults: "50",
       q: f.keyword,
     };
+    if (f.language) params.relevanceLanguage = f.language;
     if (f.dateFrom) params.publishedAfter = new Date(f.dateFrom + "T00:00:00Z").toISOString();
     if (f.dateTo) params.publishedBefore = new Date(f.dateTo + "T23:59:59Z").toISOString();
     if (f.type === "shorts") params.videoDuration = "short"; // <4 min bucket; exact ≤60s filter happens later

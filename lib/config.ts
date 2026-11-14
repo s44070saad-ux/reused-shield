@@ -31,7 +31,7 @@ export const PLANS: PlanDef[] = [
   {
     id: "solo", name: "Solo", price: 19, monthlyCredits: 100, watchLimit: 3, finderDaily: 5,
     tagline: "For one creator running one or two channels.",
-    features: ["100 credits a month", "Watch 3 channels — daily auto re-audits", "Email + in-app risk alerts", "Channel Breakdown copy plans", "Everything in Free"],
+    features: ["100 credits a month", "Watch 3 channels — daily auto re-audits", "Email + in-app risk alerts", "Channel Breakdowns (facts & risk data)", "Everything in Free"],
   },
   {
     id: "pro", name: "Pro", price: 49, monthlyCredits: 300, watchLimit: 10, finderDaily: 10,

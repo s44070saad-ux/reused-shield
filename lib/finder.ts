@@ -4,6 +4,7 @@
 
 export interface FinderFilters {
   keyword: string;
+  language?: string; // ISO 639-1 code (en, fr, hi…) — passed to the API as relevanceLanguage
   referenceChannel?: string; // channel URL/@handle/ID the search was seeded from (id form after resolving)
   dateFrom?: string; // YYYY-MM-DD
   dateTo?: string; // YYYY-MM-DD
@@ -105,7 +106,7 @@ export function applyFilters(videos: FoundVideo[], channels: Map<string, Channel
 }
 
 export function finderKey(f: FinderFilters): string {
-  return [f.keyword.trim().toLowerCase(), f.referenceChannel ?? "", f.dateFrom ?? "", f.dateTo ?? "", f.type, f.minViews ?? "", f.maxViews ?? "", f.minSubs ?? "", f.maxSubs ?? "", f.maxChannelAgeYears ?? "", f.facelessOnly ? "fl" : ""].join("|");
+  return [f.keyword.trim().toLowerCase(), f.language ?? "", f.referenceChannel ?? "", f.dateFrom ?? "", f.dateTo ?? "", f.type, f.minViews ?? "", f.maxViews ?? "", f.minSubs ?? "", f.maxSubs ?? "", f.maxChannelAgeYears ?? "", f.facelessOnly ? "fl" : ""].join("|");
 }
 
 const SEED_STOP = new Set([
