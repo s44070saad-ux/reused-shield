@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase, type Audit, type Deadline, type WatchItem, type AlertItem, deadlineDates, daysLeft } from "@/lib/supabaseClient";
 import { SELF_CHECK_QUESTIONS } from "@/lib/selfCheck";
 import { groupByChannel } from "@/lib/auditDiff";
-import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS, planById } from "@/lib/config";
+import { PRODUCT_NAME, HONESTY_NOTE, ADMIN_EMAILS, planById, CREDIT_COSTS, SIGNUP_BONUS_CREDITS, SIGNUP_BONUS_DAYS } from "@/lib/config";
 import type { Session } from "@supabase/supabase-js";
 
 export default function Dashboard() {
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [watchlist, setWatchlist] = useState<WatchItem[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [planId, setPlanId] = useState("free");
+  const [planCreatedAt, setPlanCreatedAt] = useState<string | null>(null);
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [watchInput, setWatchInput] = useState("");
   const [checkingId, setCheckingId] = useState("");
@@ -40,11 +41,11 @@ export default function Dashboard() {
     if (d.data) setDeadlines(d.data as Deadline[]);
     if (w.data) setWatchlist(w.data as WatchItem[]);
     if (al.data) setAlerts(al.data as AlertItem[]);
-    const prof = await supabase.from("profiles").select("plan").maybeSingle();
-    if (prof.data) setPlanId(prof.data.plan ?? "free");
+    const prof = await supabase.from("profiles").select("plan, created_at").maybeSingle();
+    if (prof.data) { setPlanId(prof.data.plan ?? "free"); setPlanCreatedAt(prof.data.created_at ?? null); }
     else {
       const u = await supabase.auth.getUser();
-      if (u.data.user) await supabase.from("profiles").insert({ user_id: u.data.user.id, plan: "free" });
+      if (u.data.user) { await supabase.from("profiles").insert({ user_id: u.data.user.id, plan: "free" }); setPlanCreatedAt(new Date().toISOString()); }
     }
     const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
     const usage = await supabase.from("usage_events").select("cost").gte("created_at", monthStart);
@@ -218,8 +219,10 @@ export default function Dashboard() {
 
       {(() => {
         const plan = planById(planId);
-        const left = Math.max(0, plan.monthlyCredits - creditsUsed);
-        const pct = Math.min(100, Math.round((creditsUsed / plan.monthlyCredits) * 100));
+        const bonusActive = planCreatedAt == null || Date.now() - new Date(planCreatedAt).getTime() < SIGNUP_BONUS_DAYS * 86400000;
+        const allowance = plan.monthlyCredits + (bonusActive ? SIGNUP_BONUS_CREDITS : 0);
+        const left = Math.max(0, allowance - creditsUsed);
+        const pct = Math.min(100, Math.round((creditsUsed / allowance) * 100));
         return (
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
@@ -228,8 +231,9 @@ export default function Dashboard() {
             </div>
             <div className="bar" style={{ marginTop: 12 }}><div style={{ width: `${pct}%`, background: left === 0 ? "#dc2626" : undefined }} /></div>
             <p className="muted" style={{ margin: "8px 0 0" }}>
-              <b style={{ color: "#142D4C" }}>{left} of {plan.monthlyCredits} credits left</b> this month ({creditsUsed} used · resets on the 1st).
-              Costs: audit 1 · Pre-Publish Check 1 · Breakdown 2 · Finder search 3 (cached repeats free).
+              <b style={{ color: "#142D4C" }}>{left} of {allowance} credits left</b> this month ({creditsUsed} used · resets on the 1st).
+              {bonusActive && <> Includes your <b>+{SIGNUP_BONUS_CREDITS} signup bonus</b> (first {SIGNUP_BONUS_DAYS} days).</>}
+              {" "}Costs: audit {CREDIT_COSTS.audit} · Pre-Publish Check {CREDIT_COSTS.prepublish} · Breakdown {CREDIT_COSTS.breakdown} · Finder search {CREDIT_COSTS.finder} (cached repeats free).
               {plan.watchLimit > 0
                 ? <> Monitoring: {watchlist.length}/{plan.watchLimit} channels watched — auto-checks never burn credits.</>
                 : <> Monitoring is not included on Free — paid plans re-audit watched channels daily.</>}
