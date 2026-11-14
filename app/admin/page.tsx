@@ -12,7 +12,7 @@ interface AdminData {
     totalSearches: number; searchesToday: number; searches7d: number;
     waitlistCount: number; levels: Record<string, number>;
   };
-  users: { id: string; email: string; createdAt: string; lastSignInAt: string | null; audits: number; searches: number; lastActive: string | null; isAdmin: boolean }[];
+  users: { id: string; email: string; createdAt: string; lastSignInAt: string | null; audits: number; searches: number; lastActive: string | null; plan: string; isAdmin: boolean }[];
   recentAudits: { id: string; channel: string; score: number; level: string; videos: number; createdAt: string; ownerEmail: string }[];
   recentSearches: { id: string; keyword: string; referenceTitle: string | null; resultCount: number; createdAt: string; ownerEmail: string }[];
   waitlist: { id: string; email: string; channel_url: string | null; role: string | null; created_at: string }[];
@@ -45,6 +45,15 @@ export default function AdminPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function setPlan(userId: string, plan: string) {
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set_plan", userId, plan }),
+    });
+    if (res.ok && data) setData({ ...data, users: data.users.map((u) => (u.id === userId ? { ...u, plan } : u)) });
+  }
 
   async function removeWaitlist(id: string) {
     const res = await fetch("/api/admin", {
@@ -105,11 +114,19 @@ export default function AdminPage() {
           <h2>Users</h2>
           <div className="card" style={{ overflowX: "auto" }}>
             <table>
-              <thead><tr><th>Email</th><th>Joined</th><th>Audits</th><th>Searches</th><th>Last active</th><th>Last sign-in</th></tr></thead>
+              <thead><tr><th>Email</th><th>Plan</th><th>Joined</th><th>Audits</th><th>Searches</th><th>Last active</th><th>Last sign-in</th></tr></thead>
               <tbody>
                 {data.users.map((u) => (
                   <tr key={u.id}>
                     <td>{u.email} {u.isAdmin && <span className="chip">admin</span>}</td>
+                    <td>
+                      <select value={u.plan} onChange={(e) => setPlan(u.id, e.target.value)} aria-label={`Plan for ${u.email}`}>
+                        <option value="free">Free</option>
+                        <option value="solo">Solo $19</option>
+                        <option value="pro">Pro $49</option>
+                        <option value="agency">Agency $99</option>
+                      </select>
+                    </td>
                     <td>{d(u.createdAt)}</td>
                     <td>{u.audits}</td>
                     <td>{u.searches}</td>
@@ -117,7 +134,7 @@ export default function AdminPage() {
                     <td>{d(u.lastSignInAt)}</td>
                   </tr>
                 ))}
-                {data.users.length === 0 && <tr><td colSpan={6} className="muted">No users yet.</td></tr>}
+                {data.users.length === 0 && <tr><td colSpan={7} className="muted">No users yet.</td></tr>}
               </tbody>
             </table>
           </div>
