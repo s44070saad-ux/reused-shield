@@ -9,10 +9,17 @@ import type { Session } from "@supabase/supabase-js";
 import type { FinderChannel } from "@/lib/finder";
 
 const EMPTY = {
-  keyword: "", referenceChannel: "", dateFrom: "", dateTo: "", type: "all",
+  keyword: "", referenceChannel: "", dateFrom: "", dateTo: "", type: "all", language: "",
   minViews: "", maxViews: "", minSubs: "", maxSubs: "", maxChannelAgeYears: "",
   facelessOnly: false,
 };
+
+const LANGUAGES: [string, string][] = [
+  ["", "Any language"], ["en", "English"], ["es", "Spanish"], ["fr", "French"], ["de", "German"],
+  ["it", "Italian"], ["pt", "Portuguese"], ["hi", "Hindi"], ["ur", "Urdu"], ["ar", "Arabic"],
+  ["bn", "Bengali"], ["id", "Indonesian"], ["tr", "Turkish"], ["ru", "Russian"], ["ja", "Japanese"], ["ko", "Korean"],
+];
+const langName = (code: unknown) => LANGUAGES.find(([c]) => c === code)?.[1];
 
 export default function FinderPage() {
   const router = useRouter();
@@ -138,6 +145,13 @@ export default function FinderPage() {
               </select>
             </div>
             <div className="field">
+              <label htmlFor="f-lang">Content language</label>
+              <select id="f-lang" className="field-input" value={form.language} onChange={(e) => set("language", e.target.value)}>
+                {LANGUAGES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              </select>
+              <p className="muted" style={{ margin: "6px 0 0", fontSize: ".88rem" }}>The language you make content in. YouTube weighs results toward it (its catalog has no strict language filter, so treat it as a strong preference, not a guarantee).</p>
+            </div>
+            <div className="field">
               <label htmlFor="f-age">Max channel age (years)</label>
               <input id="f-age" className="field-input" type="number" min={0} step="0.5" value={form.maxChannelAgeYears} onChange={(e) => set("maxChannelAgeYears", e.target.value)} placeholder="e.g. 1 — new channels only" />
             </div>
@@ -192,7 +206,7 @@ export default function FinderPage() {
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {c.likelyFaceless && <span className="chip">Likely faceless (guess)</span>}
                     <button className="btn btn-sm" disabled={breakingDown === c.url} onClick={() => breakDown(c.url)}>
-                      {breakingDown === c.url ? "Building plan…" : "Break down & plan"}
+                      {breakingDown === c.url ? "Analyzing…" : "Break down channel"}
                     </button>
                     <Link className="btn btn-ghost btn-sm" href={`/dashboard?channel=${encodeURIComponent(c.url)}`}>Audit this channel</Link>
                   </div>
@@ -227,6 +241,7 @@ export default function FinderPage() {
                 <span className="muted" style={{ fontSize: ".88rem" }}>
                   {new Date(h.created_at).toLocaleString()} · {Array.isArray(h.results) ? h.results.length : 0} channels
                   {h.filters.type && h.filters.type !== "all" ? ` · ${h.filters.type}` : ""}
+                  {h.filters.language ? ` · ${langName(h.filters.language)}` : ""}
                   {h.filters.maxSubs ? ` · ≤${fmtNum(Number(h.filters.maxSubs))} subs` : ""}
                   {h.filters.maxChannelAgeYears ? ` · ≤${h.filters.maxChannelAgeYears}y old` : ""}
                 </span>
