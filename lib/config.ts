@@ -14,6 +14,7 @@ export const HONESTY_NOTE =
 export interface PlanDef {
   id: string;
   name: string;
+  unavailable?: boolean; // shown on pricing but cannot be started right now (temporary, per Saad 2026-11-14)
   price: number; // USD / month
   monthlyCredits: number;
   watchLimit: number; // 0 = monitoring not included
@@ -24,17 +25,17 @@ export interface PlanDef {
 
 export const PLANS: PlanDef[] = [
   {
-    id: "free", name: "Free", price: 0, monthlyCredits: 10, watchLimit: 0, finderDaily: 2,
+    id: "free", name: "Free", unavailable: true, price: 0, monthlyCredits: 10, watchLimit: 0, finderDaily: 2,
     tagline: "Test the water before you apply for monetization.",
     features: ["10 credits a month + 25 bonus credits in your first 30 days", "Channel audits + risk scores", "Pre-Publish Check", "Viral Content Finder (cached searches free)", "Provenance Vault + Appeal Pack"],
   },
   {
-    id: "solo", name: "Solo", price: 19, monthlyCredits: 100, watchLimit: 3, finderDaily: 5,
+    id: "solo", name: "Solo", price: 29, monthlyCredits: 100, watchLimit: 3, finderDaily: 5,
     tagline: "For one creator running one or two channels.",
     features: ["100 credits a month", "Watch 3 channels — daily auto re-audits", "Email + in-app risk alerts", "Channel Breakdowns (facts & risk data)", "Everything in Free"],
   },
   {
-    id: "pro", name: "Pro", price: 49, monthlyCredits: 300, watchLimit: 10, finderDaily: 10,
+    id: "pro", name: "Pro", price: 67, monthlyCredits: 300, watchLimit: 10, finderDaily: 10,
     tagline: "For serious automation channels and small teams.",
     features: ["300 credits a month", "Watch 10 channels — daily auto re-audits", "Email + in-app risk alerts", "Score trends + since-last-audit diffs", "Everything in Solo"],
   },
