@@ -219,10 +219,10 @@ export default function Dashboard() {
 
       {(() => {
         const plan = planById(planId);
-        const bonusActive = planCreatedAt == null || Date.now() - new Date(planCreatedAt).getTime() < SIGNUP_BONUS_DAYS * 86400000;
-        const allowance = plan.monthlyCredits + (bonusActive ? SIGNUP_BONUS_CREDITS : 0);
+        const bonusActive = !plan.unavailable && (planCreatedAt == null || Date.now() - new Date(planCreatedAt).getTime() < SIGNUP_BONUS_DAYS * 86400000);
+        const allowance = plan.unavailable ? 0 : plan.monthlyCredits + (bonusActive ? SIGNUP_BONUS_CREDITS : 0);
         const left = Math.max(0, allowance - creditsUsed);
-        const pct = Math.min(100, Math.round((creditsUsed / allowance) * 100));
+        const pct = allowance > 0 ? Math.min(100, Math.round((creditsUsed / allowance) * 100)) : 0;
         return (
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
@@ -231,9 +231,15 @@ export default function Dashboard() {
             </div>
             <div className="bar" style={{ marginTop: 12 }}><div style={{ width: `${pct}%`, background: left === 0 ? "#dc2626" : undefined }} /></div>
             <p className="muted" style={{ margin: "8px 0 0" }}>
-              <b style={{ color: "#142D4C" }}>{left} of {allowance} credits left</b> this month ({creditsUsed} used · resets on the 1st).
-              {bonusActive && <> Includes your <b>+{SIGNUP_BONUS_CREDITS} signup bonus</b> (first {SIGNUP_BONUS_DAYS} days).</>}
-              {" "}Costs: audit {CREDIT_COSTS.audit} · Pre-Publish Check {CREDIT_COSTS.prepublish} · Breakdown {CREDIT_COSTS.breakdown} · Finder search {CREDIT_COSTS.finder} (cached repeats free).
+              {plan.unavailable ? (
+                <><b style={{ color: "#142D4C" }}>The {plan.name} plan is unavailable right now</b> — no credits are active on this account, and the signup bonus is paused with it. Contact us to activate a paid plan and start right away.</>
+              ) : (
+                <>
+                  <b style={{ color: "#142D4C" }}>{left} of {allowance} credits left</b> this month ({creditsUsed} used · resets on the 1st).
+                  {bonusActive && <> Includes your <b>+{SIGNUP_BONUS_CREDITS} signup bonus</b> (first {SIGNUP_BONUS_DAYS} days).</>}
+                  {" "}Costs: audit {CREDIT_COSTS.audit} · Pre-Publish Check {CREDIT_COSTS.prepublish} · Breakdown {CREDIT_COSTS.breakdown} · Finder search {CREDIT_COSTS.finder} (cached repeats free).
+                </>
+              )}
               {plan.watchLimit > 0
                 ? <> Monitoring: {watchlist.length}/{plan.watchLimit} channels watched — auto-checks never burn credits.</>
                 : <> Monitoring is not included on Free — paid plans re-audit watched channels daily.</>}
