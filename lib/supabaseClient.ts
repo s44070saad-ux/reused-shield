@@ -57,6 +57,18 @@ export interface ProvenanceEntry {
   created_at: string;
 }
 
+export interface WatchItem {
+  id: string; user_id: string; channel_id: string; channel_title: string | null;
+  channel_url: string | null; last_score: number | null; last_level: string | null;
+  last_checked_at: string | null; created_at: string;
+}
+
+export interface AlertItem {
+  id: string; user_id: string; watchlist_id: string | null; channel_title: string | null;
+  message: string; prev_score: number | null; new_score: number | null;
+  audit_id: string | null; read: boolean; created_at: string;
+}
+
 export interface Deadline {
   id: string;
   user_id: string;
