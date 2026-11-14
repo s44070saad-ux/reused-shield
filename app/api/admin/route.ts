@@ -54,6 +54,9 @@ export async function GET(req: NextRequest) {
     const searchRows = searches ?? [];
     const waitRows = waitlist ?? [];
 
+    const { data: profileRows } = await svc.from("profiles").select("user_id, plan");
+    const planOf = new Map((profileRows ?? []).map((p: any) => [p.user_id, p.plan as string]));
+
     const byUser = new Map<string, { audits: number; searches: number; lastActive: string | null }>();
     const bump = (uid: string, kind: "audits" | "searches", iso: string) => {
       const cur = byUser.get(uid) ?? { audits: 0, searches: 0, lastActive: null };
@@ -89,6 +92,7 @@ export async function GET(req: NextRequest) {
         audits: byUser.get(u.id)?.audits ?? 0,
         searches: byUser.get(u.id)?.searches ?? 0,
         lastActive: byUser.get(u.id)?.lastActive ?? null,
+        plan: planOf.get(u.id) ?? "free",
         isAdmin: ADMIN_EMAILS.map((e) => e.toLowerCase()).includes((u.email ?? "").toLowerCase()),
       })),
       recentAudits: auditRows.slice(0, 25).map((a: any) => ({
@@ -105,6 +109,22 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Admin data failed to load." }, { status: 500 });
   }
+}
+
+/** Set a user's plan. Body: { action: "set_plan", userId, plan } */
+export async function POST(req: NextRequest) {
+  const gate = await requireAdmin(req);
+  if ("error" in gate) return gate.error;
+  const body = await req.json().catch(() => ({}));
+  if (body.action !== "set_plan") return NextResponse.json({ error: "Unknown action." }, { status: 400 });
+  const userId = String(body.userId ?? "");
+  const plan = String(body.plan ?? "");
+  if (!userId || !["free", "solo", "pro", "agency"].includes(plan)) {
+    return NextResponse.json({ error: "Missing userId or invalid plan." }, { status: 400 });
+  }
+  const { error } = await gate.svc.from("profiles").upsert({ user_id: userId, plan, updated_at: new Date().toISOString() });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
 
 /** Delete one waitlist entry (spam cleanup). Body: { waitlistId } */
