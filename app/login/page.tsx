@@ -43,7 +43,7 @@ export default function LoginPage() {
         <Link className="btn btn-ghost btn-sm" href="/">Home</Link>
       </div>
       <h1 style={{ fontSize: "1.9rem" }}>{mode === "signin" ? "Sign in" : "Create your account"}</h1>
-      <p className="muted">Free beta. Your audits and provenance entries are private to your account.</p>
+      <p className="muted">Your audits and provenance entries are private to your account.</p>
       <div className="card">
         <form onSubmit={submit}>
           <div className="field">
