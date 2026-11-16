@@ -201,12 +201,59 @@ th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color:
 details { border: 1px solid #e0e9f2; border-radius: 12px; padding: 12px 16px; margin-top: 10px; background: #fbfdff; }
 summary { cursor: pointer; font-weight: 700; min-height: 32px; color: #142D4C; }
 .footer-note { text-align: center; color: #647d95; font-size: .88rem; margin-top: 48px; }
+
+/* ── SaaS landing: nav links, product mock, CTA band ──────────────────── */
+.nav-links { display: flex; gap: 22px; align-items: center; }
+.nav-links a { color: #24384f; text-decoration: none; font-weight: 600; font-size: .95rem; padding: 8px 2px; }
+.nav-links a:hover { color: #18A999; }
+@media (max-width: 860px) { .nav-links { display: none; } }
+.mock-grid { display: grid; gap: 14px; }
+@media (min-width: 860px) { .mock-grid { grid-template-columns: 1fr 1fr 1fr; } }
+.mock-panel {
+  border: 1px solid #e0e9f2; border-radius: 14px; padding: 16px;
+  background: linear-gradient(180deg, #fbfdff, #f4f8fc);
+}
+.mock-panel h3 { font-size: .95rem; margin-bottom: 12px; }
+.mock-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px dashed #e3ebf3; font-size: .92rem;
+}
+.mock-row:last-of-type { border-bottom: 0; }
+.mock-alert {
+  margin-top: 14px; background: #fef3c7; border: 1px solid #fcd34d; color: #92400e;
+  border-radius: 10px; padding: 9px 12px; font-size: .85rem;
+}
+.cta-band {
+  margin-top: 44px; border-radius: 24px; padding: clamp(26px, 5vw, 44px); text-align: center;
+  background: linear-gradient(120deg, #0d1f36 0%, #142D4C 45%, #14655c 120%); color: #eaf2fa;
+  box-shadow: 0 20px 42px rgba(13, 31, 54, .30);
+}
+.cta-band h2 { color: #fff; margin: 0 0 8px; }
+.cta-band p { color: #b9cee4; margin: 0 auto 20px; max-width: 520px; }
+.cta-band .btn-white { background: #fff; color: #142D4C; box-shadow: 0 8px 20px rgba(0, 0, 0, .25); }
+
+/* ── Responsive: phones (Android) + small screens ─────────────────────── */
+@media (max-width: 720px) {
+  .clock { flex: 1 1 44%; }
+  .clock b { font-size: 1.35rem; }
+  .hero-stats { gap: 16px; }
+  .hero-stats div b { font-size: 1.1rem; }
+  .report-window-body { padding: 16px; }
+  .topbar { padding: 10px 8px; margin: 0 -8px; }
+  .logo { font-size: 1.02rem; }
+  h2 { margin-top: 32px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  details { padding: 10px 14px; }
+}
 @media (max-width: 640px) {
   .card { padding: 18px 15px; border-radius: 15px; }
   table { font-size: .82rem; }
   th, td { padding: 7px 6px; }
   .score-ring { width: 112px; height: 112px; }
   .hero { border-radius: 20px; }
+  .wrap { padding: 0 12px 60px; }
+  .btn { width: auto; }
+  .field-input { font-size: 16px; } /* prevents auto-zoom on focus in mobile browsers */
 }
 @media print {
   body { background: #fff; color: #000; }
