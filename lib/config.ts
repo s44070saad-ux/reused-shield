@@ -30,17 +30,17 @@ export const PLANS: PlanDef[] = [
     features: ["10 credits a month + 25 bonus credits in your first 30 days", "Channel audits + risk scores", "Pre-Publish Check", "Viral Content Finder (cached searches free)", "Provenance Vault + Appeal Pack"],
   },
   {
-    id: "solo", name: "Solo", price: 29, monthlyCredits: 100, watchLimit: 3, finderDaily: 5,
+    id: "solo", name: "Solo", price: 19, monthlyCredits: 100, watchLimit: 3, finderDaily: 5,
     tagline: "For one creator running one or two channels.",
     features: ["100 credits a month", "Watch 3 channels — daily auto re-audits", "Email + in-app risk alerts", "Channel Breakdowns (facts & risk data)", "All audit & safety tools included"],
   },
   {
-    id: "pro", name: "Pro", price: 67, monthlyCredits: 300, watchLimit: 10, finderDaily: 10,
+    id: "pro", name: "Pro", price: 49, monthlyCredits: 300, watchLimit: 10, finderDaily: 10,
     tagline: "For serious automation channels and small teams.",
     features: ["300 credits a month", "Watch 10 channels — daily auto re-audits", "Email + in-app risk alerts", "Score trends + since-last-audit diffs", "Everything in Solo"],
   },
   {
-    id: "agency", name: "Agency", price: 99, monthlyCredits: 1000, watchLimit: 30, finderDaily: 20,
+    id: "agency", name: "Agency", price: 97, monthlyCredits: 1000, watchLimit: 30, finderDaily: 20,
     tagline: "For freelancers and agencies managing client channels.",
     features: ["1,000 credits a month", "Watch 30 channels — daily auto re-audits", "Email + in-app risk alerts", "Client-ready reports and breakdowns", "Everything in Pro"],
   },
