@@ -57,6 +57,8 @@ export async function GET(req: NextRequest) {
     const { data: profileRows } = await svc.from("profiles").select("user_id, plan");
     const planOf = new Map((profileRows ?? []).map((p: any) => [p.user_id, p.plan as string]));
 
+    const { data: subReqRows } = await svc.from("subscription_requests").select("id, user_id, plan, contact, note, status, created_at").order("created_at", { ascending: false }).limit(200);
+
     const byUser = new Map<string, { audits: number; searches: number; lastActive: string | null }>();
     const bump = (uid: string, kind: "audits" | "searches", iso: string) => {
       const cur = byUser.get(uid) ?? { audits: 0, searches: 0, lastActive: null };
@@ -105,17 +107,39 @@ export async function GET(req: NextRequest) {
         createdAt: s.created_at, ownerEmail: emailOf.get(s.user_id) ?? "(deleted user)",
       })),
       waitlist: waitRows,
+      subRequests: (subReqRows ?? []).map((r: any) => ({
+        id: r.id, email: emailOf.get(r.user_id) ?? "(deleted user)", userId: r.user_id,
+        plan: r.plan, contact: r.contact, note: r.note, status: r.status, createdAt: r.created_at,
+      })),
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Admin data failed to load." }, { status: 500 });
   }
 }
 
-/** Set a user's plan. Body: { action: "set_plan", userId, plan } */
+/** Admin actions: set_plan { userId, plan } · approve_request / reject_request { requestId } */
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin(req);
   if ("error" in gate) return gate.error;
   const body = await req.json().catch(() => ({}));
+
+  if (body.action === "approve_request" || body.action === "reject_request") {
+    const requestId = String(body.requestId ?? "");
+    if (!requestId) return NextResponse.json({ error: "Missing requestId." }, { status: 400 });
+    const { data: subReq, error: fetchErr } = await gate.svc.from("subscription_requests").select("id, user_id, plan, status").eq("id", requestId).single();
+    if (fetchErr || !subReq) return NextResponse.json({ error: "Request not found." }, { status: 404 });
+    if (subReq.status !== "pending") return NextResponse.json({ error: `Request is already ${subReq.status}.` }, { status: 400 });
+    if (body.action === "approve_request") {
+      const { error: planErr } = await gate.svc.from("profiles").upsert({ user_id: subReq.user_id, plan: subReq.plan, updated_at: new Date().toISOString() });
+      if (planErr) return NextResponse.json({ error: planErr.message }, { status: 500 });
+    }
+    const { error } = await gate.svc.from("subscription_requests")
+      .update({ status: body.action === "approve_request" ? "approved" : "rejected", resolved_at: new Date().toISOString() })
+      .eq("id", requestId);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
   if (body.action !== "set_plan") return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   const userId = String(body.userId ?? "");
   const plan = String(body.plan ?? "");
