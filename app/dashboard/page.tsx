@@ -226,13 +226,13 @@ export default function Dashboard() {
         return (
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <h3 style={{ margin: 0 }}>Your plan: {plan.name}{plan.price > 0 && <span className="muted" style={{ fontWeight: 400 }}> · ${plan.price}/month</span>}</h3>
-              <a className="btn btn-ghost btn-sm" href="/#pricing">See plans</a>
+              <h3 style={{ margin: 0 }}>{plan.unavailable ? "No active plan" : <>Your plan: {plan.name}{plan.price > 0 && <span className="muted" style={{ fontWeight: 400 }}> · ${plan.price}/month</span>}</>}</h3>
+              <a className="btn btn-ghost btn-sm" href={plan.unavailable ? "/subscribe" : "/#pricing"}>{plan.unavailable ? "Subscribe" : "See plans"}</a>
             </div>
             <div className="bar" style={{ marginTop: 12 }}><div style={{ width: `${pct}%`, background: left === 0 ? "#dc2626" : undefined }} /></div>
             <p className="muted" style={{ margin: "8px 0 0" }}>
               {plan.unavailable ? (
-                <><b style={{ color: "#142D4C" }}>The {plan.name} plan is unavailable right now</b> — no credits are active on this account, and the signup bonus is paused with it. Contact us to activate a paid plan and start right away.</>
+                <><b style={{ color: "#142D4C" }}>There is no free plan right now</b> — no credits are active on this account until a plan is activated. <Link href="/subscribe">Send a subscription request</Link> and we'll reply with payment instructions; activation is manual and usually same-day.</>
               ) : (
                 <>
                   <b style={{ color: "#142D4C" }}>{left} of {allowance} credits left</b> this month ({creditsUsed} used · resets on the 1st).
@@ -242,7 +242,7 @@ export default function Dashboard() {
               )}
               {plan.watchLimit > 0
                 ? <> Monitoring: {watchlist.length}/{plan.watchLimit} channels watched — auto-checks never burn credits.</>
-                : <> Monitoring is not included on Free — paid plans re-audit watched channels daily.</>}
+                : <> Monitoring needs an active plan — paid plans re-audit watched channels daily.</>}
             </p>
           </div>
         );
