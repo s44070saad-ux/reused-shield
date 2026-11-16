@@ -16,6 +16,7 @@ interface AdminData {
   recentAudits: { id: string; channel: string; score: number; level: string; videos: number; createdAt: string; ownerEmail: string }[];
   recentSearches: { id: string; keyword: string; referenceTitle: string | null; resultCount: number; createdAt: string; ownerEmail: string }[];
   waitlist: { id: string; email: string; channel_url: string | null; role: string | null; created_at: string }[];
+  subRequests: { id: string; email: string; userId: string; plan: string; contact: string; note: string | null; status: string; createdAt: string }[];
 }
 
 const d = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
@@ -53,6 +54,15 @@ export default function AdminPage() {
       body: JSON.stringify({ action: "set_plan", userId, plan }),
     });
     if (res.ok && data) setData({ ...data, users: data.users.map((u) => (u.id === userId ? { ...u, plan } : u)) });
+  }
+
+  async function resolveRequest(id: string, action: "approve_request" | "reject_request") {
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ action, requestId: id }),
+    });
+    if (res.ok) load(token); // reload everything (plan + request status both changed)
   }
 
   async function removeWaitlist(id: string) {
@@ -175,6 +185,32 @@ export default function AdminPage() {
                   </tr>
                 ))}
                 {data.recentSearches.length === 0 && <tr><td colSpan={5} className="muted">No searches yet.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+
+          <h2>Subscription requests {data.subRequests.filter((r) => r.status === "pending").length > 0 && <span className="chip" style={{ background: "#fef3c7", borderColor: "#fcd34d" }}>{data.subRequests.filter((r) => r.status === "pending").length} pending</span>}</h2>
+          <div className="card" style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Requested</th><th>Account</th><th>Plan</th><th>Contact them at</th><th>Note</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {data.subRequests.map((r) => (
+                  <tr key={r.id}>
+                    <td>{dt(r.createdAt)}</td>
+                    <td>{r.email}</td>
+                    <td style={{ textTransform: "capitalize" }}>{r.plan}</td>
+                    <td>{r.contact}</td>
+                    <td>{r.note ?? "—"}</td>
+                    <td><span className="chip" style={r.status === "approved" ? { background: "#dcfce7", borderColor: "#86efac" } : r.status === "rejected" ? { background: "#fee2e2", borderColor: "#fca5a5" } : { background: "#fef3c7", borderColor: "#fcd34d" }}>{r.status}</span></td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {r.status === "pending" && <>
+                        <button className="btn btn-sm" onClick={() => resolveRequest(r.id, "approve_request")}>Approve &amp; activate</button>{" "}
+                        <button className="btn btn-ghost btn-sm" onClick={() => resolveRequest(r.id, "reject_request")}>Reject</button>
+                      </>}
+                    </td>
+                  </tr>
+                ))}
+                {data.subRequests.length === 0 && <tr><td colSpan={7} className="muted">No subscription requests yet.</td></tr>}
               </tbody>
             </table>
           </div>
