@@ -52,14 +52,14 @@ export default function Home() {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link className="btn btn-ghost btn-sm" href="/login">Sign in</Link>
           <Link className="btn btn-ghost btn-sm" href="/finder">Viral Finder</Link>
-          <Link className="btn btn-sm" href="/dashboard">Run a free audit</Link>
+          <Link className="btn btn-sm" href="/dashboard">Run an audit</Link>
         </div>
       </div>
 
       <section className="hero">
         <div className="hero-grid">
           <div>
-            <span className="badge">DAILY MONITORING · EMAIL ALERTS · START FREE</span>
+            <span className="badge">DAILY MONITORING · EMAIL ALERTS · APPEAL PACK</span>
             <h1>Find out your reused-content risk <span className="hl">before</span> YouTube tells you.</h1>
             <p className="lede">
               Since YouTube's July 2025 clarification of the reused-content policy — enforced as "inauthentic,
@@ -68,7 +68,7 @@ export default function Home() {
               signals, shows you exactly what looks templated, and helps you build the evidence trail an appeal needs.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
-              <Link className="btn btn-white" href="/dashboard">Audit my channel — free</Link>
+              <Link className="btn btn-white" href="/dashboard">Audit my channel</Link>
               <a className="btn btn-outline-w" href="#sample">See a sample report</a>
             </div>
             <div className="hero-stats">
@@ -174,32 +174,28 @@ export default function Home() {
         Every plan includes the full audit engine, Pre-Publish Check, the Finder, Breakdowns, the Provenance Vault and the Appeal Pack.
         Plans differ in <b>credits</b> (audit = {CREDIT_COSTS.audit} · Pre-Publish = {CREDIT_COSTS.prepublish} · Breakdown = {CREDIT_COSTS.breakdown} · Finder search = {CREDIT_COSTS.finder}, cached repeats free)
         and in <b>monitoring</b> — paid plans re-audit your watched channels every day and email you when risk moves.
-        Every new account also starts with <b>+{SIGNUP_BONUS_CREDITS} bonus credits</b> for its first 30 days.
+        Once a plan is activated, new accounts also get <b>+{SIGNUP_BONUS_CREDITS} bonus credits</b> for their first 30 days. There is no free plan right now — every plan is activated manually after a subscription request.
       </p>
       <div className="grid">
-        {PLANS.map((p) => (
-          <div className="card feature" key={p.id} style={{ marginTop: 0, ...(p.id === "pro" ? { borderColor: "#18A999", borderWidth: 2 } : {}), ...(p.unavailable ? { opacity: .6 } : {}) }}>
+        {PLANS.filter((p) => !p.unavailable).map((p) => (
+          <div className="card feature" key={p.id} style={{ marginTop: 0, ...(p.id === "pro" ? { borderColor: "#18A999", borderWidth: 2 } : {}) }}>
             {p.id === "pro" && <span className="chip" style={{ background: "#18A999", color: "#fff", borderColor: "#18A999" }}>MOST POPULAR</span>}
-            {p.unavailable && <span className="chip">UNAVAILABLE RIGHT NOW</span>}
             <h3 style={{ margin: "6px 0 0" }}>{p.name}</h3>
-            {p.unavailable
-              ? <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.25rem", color: "#142D4C" }}>Unavailable right now</b></p>
-              : <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.7rem", color: "#142D4C" }}>${p.price}</b><span className="muted"> /month</span></p>}
+            <p style={{ margin: "4px 0" }}><b style={{ fontSize: "1.7rem", color: "#142D4C" }}>${p.price}</b><span className="muted"> /month</span></p>
             <p className="muted" style={{ marginTop: 0 }}>{p.tagline}</p>
             <ul style={{ margin: 0, paddingLeft: 18 }}>
               {p.features.map((f) => <li key={f} style={{ marginBottom: 6 }}>{f}</li>)}
             </ul>
-            {p.unavailable
-              ? <span className="btn btn-sm btn-ghost" aria-disabled="true" style={{ marginTop: 10, pointerEvents: "none" }}>Unavailable right now</span>
-              : <Link className={`btn btn-sm ${p.id === "pro" ? "" : "btn-ghost"}`} href="/login" style={{ marginTop: 10 }}>
-                  {p.id === "free" ? "Start free" : `Get ${p.name}`}
-                </Link>}
+            <Link className={`btn btn-sm ${p.id === "pro" ? "" : "btn-ghost"}`} href="/subscribe" style={{ marginTop: 10 }}>
+              Get {p.name}
+            </Link>
           </div>
         ))}
       </div>
       <p className="muted" style={{ fontSize: ".92rem" }}>
         Credits reset on the 1st of each month. Watched-channel auto-checks never burn credits.
-        To upgrade today: create an account, then contact us — paid plans are activated on your account within a day while self-serve checkout is being finished.
+        How subscribing works: create an account, send a subscription request, and we reply with payment instructions.
+        Your plan is activated as soon as payment lands — usually the same day. Every activation is done by hand, so nothing is ever charged automatically.
       </p>
 
       <h2>Prefer a guided start?</h2>
